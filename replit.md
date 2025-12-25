@@ -4,6 +4,14 @@
 FastAPI backend for a league management platform supporting organizations, leagues, teams, players, games, and announcements. Includes AI integration, realtime capabilities, and comprehensive security features.
 
 ## Recent Changes
+- 2024-12-25: Added TTL caching with deepcopy protection (get_cached_list/set_cached_list helpers)
+- 2024-12-25: Password validation moved to Pydantic field_validator for consistent 422 responses
+- 2024-12-25: GameStatus enum for validating game status filter parameter
+- 2024-12-25: Added pagination to all list endpoints with standard response wrapper
+- 2024-12-25: Tightened Pydantic validation with field constraints, EmailStr, enums for status
+- 2024-12-25: Added separate Update schemas with optional fields for PATCH endpoints
+- 2024-12-25: Added TTL caching for list endpoints and cache invalidation on mutations
+- 2024-12-25: Fixed N+1 queries using joinedload for permission checks
 - 2024-12-25: Switched AI integration from OpenAI to Anthropic Claude (claude-sonnet-4-5)
 - 2024-12-25: Added documentation structure (docs/roadmap.md, docs/adr/)
 - 2024-12-25: Implemented AI router with rate limiting and audit logging
@@ -20,7 +28,10 @@ app/
 ├── core/
 │   ├── config.py      # Application settings
 │   ├── ai_config.py   # AI-specific settings
+│   ├── cache.py       # TTL caching utilities
+│   ├── limiter.py     # Shared rate limiter
 │   └── logging.py     # Structured logging setup
+├── schemas.py         # Pydantic schemas with validation
 ├── routers/
 │   ├── auth.py        # Authentication (register, login)
 │   ├── ai.py          # AI endpoints with rate limiting

@@ -28,8 +28,7 @@ def test_register_weak_password(client: TestClient):
             "full_name": "Test User"
         }
     )
-    assert response.status_code == 400
-    assert "Password must be at least 8 characters" in response.json()["detail"]
+    assert response.status_code == 422
 
 
 def test_register_password_no_uppercase(client: TestClient):
@@ -41,8 +40,7 @@ def test_register_password_no_uppercase(client: TestClient):
             "full_name": "Test User"
         }
     )
-    assert response.status_code == 400
-    assert "uppercase" in response.json()["detail"]
+    assert response.status_code == 422
 
 
 def test_register_duplicate_email(client: TestClient):

@@ -18,3 +18,4 @@ python-json-logger
 slowapi
 tenacity
 anthropic
+email-validator
