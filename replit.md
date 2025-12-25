@@ -1,26 +1,31 @@
 # The-League Backend
 
 ## Overview
-FastAPI backend for a league management platform supporting organizations, leagues, teams, players, games, and announcements. Includes AI integration, realtime capabilities, and comprehensive security features.
+FastAPI backend for a two-sided marketplace platform connecting athletes with recreational sports leagues. Venues (golf courses, bowling alleys, sports complexes, esports arenas) create and manage leagues for various sports. Supports league discovery via geolocation, participant registration, score posting, standings tracking, social features, and prediction/pick'em systems.
 
 ## Recent Changes
-- 2024-12-25: Added TTL caching with deepcopy protection (get_cached_list/set_cached_list helpers)
-- 2024-12-25: Password validation moved to Pydantic field_validator for consistent 422 responses
-- 2024-12-25: GameStatus enum for validating game status filter parameter
-- 2024-12-25: Added pagination to all list endpoints with standard response wrapper
-- 2024-12-25: Tightened Pydantic validation with field constraints, EmailStr, enums for status
-- 2024-12-25: Added separate Update schemas with optional fields for PATCH endpoints
-- 2024-12-25: Added TTL caching for list endpoints and cache invalidation on mutations
-- 2024-12-25: Fixed N+1 queries using joinedload for permission checks
-- 2024-12-25: Switched AI integration from OpenAI to Anthropic Claude (claude-sonnet-4-5)
-- 2024-12-25: Added documentation structure (docs/roadmap.md, docs/adr/)
-- 2024-12-25: Implemented AI router with rate limiting and audit logging
-- 2024-12-25: Added realtime token endpoints for Socket.IO integration
-- 2024-12-25: Security hardening (CORS, password rules, rate limiting, security headers)
-- 2024-12-25: Added Alembic migrations with PostgreSQL connection pooling
-- 2024-12-25: Added Prometheus metrics endpoint
-- 2024-12-25: Added pytest test suite for auth and CRUD operations
-- 2024-12-25: Added Makefile for developer commands
+- 2024-12-25: Replaced Organization model with Venue model (location-based with geolocation support)
+- 2024-12-25: Added Sport model with customizable scoring types (stroke_play, match_play, points, wins_losses, sets, frames)
+- 2024-12-25: Added Season model to track league seasons with registration deadlines
+- 2024-12-25: Implemented Registration model with approval modes (open, approval_required, invite_only)
+- 2024-12-25: Built RBAC with VenueMember, VenueRole (owner, admin, staff), and LeagueRole
+- 2024-12-25: Added geolocation search for venues using distance calculation (radius in miles)
+- 2024-12-25: Updated all tests to work with new Venue-based architecture (19 tests passing)
+
+## Architecture
+
+### Venue-Centric Model
+- **Venue**: Physical/virtual location that hosts leagues (golf_course, bowling_alley, sports_complex, esports_arena, etc.)
+- **Sport**: Defines sport types with scoring systems (supports Golf, Pickleball, Softball, Bowling, Chess, etc.)
+- **VenueSport**: Links venues to sports they support
+- **League**: Competition organized by a venue for a specific sport
+- **Season**: Time-bounded period within a league with registration deadlines
+- **Registration**: Player enrollment in a season with approval workflow
+
+### Role-Based Access Control
+- **VenueMember**: User membership in a venue with role (owner, admin, staff)
+- **LeagueRole**: User role within a specific league (organizer, captain, participant)
+- Owner/Admin can create leagues, Staff can manage teams/games
 
 ## Project Structure
 ```
@@ -37,12 +42,15 @@ app/
 │   ├── ai.py          # AI endpoints with rate limiting
 │   ├── realtime.py    # Realtime token generation
 │   ├── metrics.py     # Prometheus metrics
-│   ├── orgs.py        # Organization CRUD
+│   ├── venues.py      # Venue CRUD with geolocation search
+│   ├── sports.py      # Sport definitions CRUD
+│   ├── seasons.py     # Season management
+│   ├── registrations.py # Player registration workflow
 │   ├── leagues.py     # League CRUD
 │   ├── teams.py       # Team CRUD
 │   ├── players.py     # Player CRUD
-│   ├── games.py       # Game CRUD
-│   ├── posts.py       # Posts/announcements CRUD
+│   ├── games.py       # Game CRUD with score submissions
+│   ├── posts.py       # Bulletin board / announcements
 │   └── users.py       # User management
 ├── db.py              # Database connection (SQLite/PostgreSQL)
 ├── deps.py            # FastAPI dependencies
@@ -61,23 +69,46 @@ tests/                 # pytest test suite
 - **Metrics**: `GET /metrics` (Prometheus format)
 - **Docs**: `GET /docs` (Swagger UI)
 - **Auth**:
-  - `POST /auth/register` - User registration (rate limited)
-  - `POST /auth/token` - Login (rate limited)
+  - `POST /auth/register` - User registration
+  - `POST /auth/token` - Login
   - `GET /users/me` - Current user info
-- **AI** (requires authentication):
-  - `GET /ai/policy` - Data handling policy
-  - `POST /ai/chat` - Chat completion (rate limited)
-  - `POST /ai/summarize` - Text summarization (rate limited)
-- **Realtime**:
-  - `POST /games/{id}/realtime-token` - Get JWT for Socket.IO
-  - `POST /realtime/validate` - Validate realtime token
-- **CRUD** (all require authentication):
-  - `/orgs/*` - Organizations
-  - `/leagues/*` - Leagues
-  - `/teams/*` - Teams
-  - `/players/*` - Players
-  - `/games/*` - Games
-  - `/posts/*` - Posts
+- **Venues** (require authentication):
+  - `GET /venues` - List venues with geolocation filter (lat, lng, radius_miles)
+  - `POST /venues` - Create venue (user becomes owner)
+  - `GET /venues/{id}` - Venue details
+  - `PATCH /venues/{id}` - Update venue
+- **Sports**:
+  - `GET /sports` - List sport definitions
+  - `POST /sports` - Create sport
+- **Leagues**:
+  - `GET /leagues` - List leagues (filterable by venue, sport)
+  - `POST /leagues` - Create league (requires venue admin)
+  - `PATCH /leagues/{id}` - Update league
+- **Seasons**:
+  - `GET /seasons` - List seasons
+  - `POST /seasons` - Create season for league
+- **Registrations**:
+  - `POST /registrations` - Register for a season
+  - `PATCH /registrations/{id}` - Approve/reject registration
+- **Teams/Players/Games/Posts**: Standard CRUD operations
+
+## Data Models
+
+### Scoring Types
+- `stroke_play` - Lower is better (Golf)
+- `match_play` - Head-to-head points
+- `points` - Higher is better
+- `wins_losses` - Win/Loss record
+- `sets` - Set-based scoring (Tennis, Volleyball)
+- `frames` - Frame-based scoring (Bowling)
+
+### Registration Modes
+- `open` - Anyone can register
+- `approval_required` - Requires venue admin approval
+- `invite_only` - Invitation by organizer only
+
+### Venue Types
+- `golf_course`, `bowling_alley`, `sports_complex`, `esports_arena`, `indoor_court`, `outdoor_field`, `virtual`, `other`
 
 ## Environment Variables
 | Variable | Required | Default | Description |
@@ -87,8 +118,6 @@ tests/                 # pytest test suite
 | `CORS_ORIGINS` | No | `*` | Comma-separated allowed origins |
 | `ENVIRONMENT` | No | `dev` | `dev` or `production` |
 | `AI_INTEGRATIONS_ANTHROPIC_API_KEY` | Auto | - | Set by Replit AI Integrations |
-| `AI_INTEGRATIONS_ANTHROPIC_BASE_URL` | Auto | - | Set by Replit AI Integrations |
-| `AI_REQUESTS_PER_HOUR` | No | `100` | Rate limit for AI endpoints |
 
 ## Development Commands
 ```bash
@@ -98,46 +127,19 @@ make test-cov     # Run tests with coverage
 make format       # Format code with ruff
 make lint         # Check code with ruff
 make migrate      # Run database migrations
-make migrate-new  # Create new migration
 make help         # Show all commands
 ```
 
-## Local Development
+## Testing
 ```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Run migrations (if using PostgreSQL)
-alembic upgrade head
-
-# Start server
-uvicorn app.main:app --reload --port 5000
+pytest tests/ -v          # Run all 19 tests
+pytest tests/test_auth.py # Auth tests only
+pytest tests/test_leagues.py # Venue/League tests
 ```
-
-## Replit Deployment
-The app is configured to run on port 5000 with the workflow "Backend API". The DATABASE_URL environment variable is automatically set by Replit's PostgreSQL integration.
 
 ## Security Features
 - JWT-based authentication with 7-day expiry
 - Strong password requirements (8+ chars, upper/lower/digit)
 - Rate limiting on auth and AI endpoints
 - Security headers (HSTS, X-Frame-Options, etc.)
-- Strict CORS in production mode
-- Request ID tracking for observability
-
-## AI Integration
-AI features use Anthropic Claude (claude-sonnet-4-5) via Replit AI Integrations. This means:
-- No separate API key required - automatically configured by Replit
-- Charges are billed to your Replit credits
-- Rate limited per user (100 requests/hour by default)
-- Audit logged with timestamps and token counts
-- Subject to data handling policy (see `GET /ai/policy`)
-
-## Testing
-```bash
-# Run all tests
-pytest tests/ -v
-
-# Run specific test file
-pytest tests/test_auth.py -v
-```
+- Role-based access control for venues and leagues

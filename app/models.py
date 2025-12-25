@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 from typing import Optional
 
 from sqlmodel import Field, Relationship, SQLModel
@@ -6,99 +7,232 @@ from sqlmodel import Field, Relationship, SQLModel
 
 class Timestamped(SQLModel):
     created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+    updated_at: datetime | None = Field(default=None)
+
+
+class VenueType(str, Enum):
+    golf_course = "golf_course"
+    bowling_alley = "bowling_alley"
+    sports_complex = "sports_complex"
+    gym = "gym"
+    rec_center = "rec_center"
+    esports_arena = "esports_arena"
+    online = "online"
+    other = "other"
+
+
+class SportCategory(str, Enum):
+    golf = "golf"
+    bowling = "bowling"
+    pickleball = "pickleball"
+    softball = "softball"
+    tennis = "tennis"
+    soccer = "soccer"
+    volleyball = "volleyball"
+    basketball = "basketball"
+    chess = "chess"
+    checkers = "checkers"
+    connect_four = "connect_four"
+    battleship = "battleship"
+    other = "other"
+
+
+class ScoringType(str, Enum):
+    stroke_play = "stroke_play"
+    match_play = "match_play"
+    points = "points"
+    wins_losses = "wins_losses"
+    sets = "sets"
+    frames = "frames"
+    custom = "custom"
+
+
+class RegistrationMode(str, Enum):
+    open = "open"
+    approval_required = "approval_required"
+    invite_only = "invite_only"
+
+
+class RegistrationStatus(str, Enum):
+    pending = "pending"
+    approved = "approved"
+    rejected = "rejected"
+    waitlisted = "waitlisted"
+    cancelled = "cancelled"
+
+
+class GameStatus(str, Enum):
+    scheduled = "scheduled"
+    in_progress = "in_progress"
+    final = "final"
+    cancelled = "cancelled"
+    postponed = "postponed"
+
+
+class VenueRole(str, Enum):
+    owner = "owner"
+    admin = "admin"
+    staff = "staff"
+
+
+class LeagueRole(str, Enum):
+    organizer = "organizer"
+    captain = "captain"
+    participant = "participant"
 
 
 class UserBase(SQLModel):
     email: str = Field(index=True, unique=True)
     full_name: str | None = None
     is_active: bool = True
+    bio: str | None = None
+    avatar_url: str | None = None
+    latitude: float | None = Field(default=None, index=True)
+    longitude: float | None = Field(default=None, index=True)
+    city: str | None = Field(default=None, index=True)
+    state: str | None = Field(default=None, index=True)
 
 
 class User(UserBase, Timestamped, table=True):
     id: int | None = Field(default=None, primary_key=True)
     hashed_password: str
 
-    orgs: list["Organization"] = Relationship(back_populates="owner")
+    venue_memberships: list["VenueMember"] = Relationship(back_populates="user")
+    registrations: list["Registration"] = Relationship(back_populates="user")
     posts: list["Post"] = Relationship(back_populates="author")
 
 
-class UserCreate(SQLModel):
-    email: str
-    password: str
-    full_name: str | None = None
-
-
-class UserRead(UserBase, Timestamped):
-    id: int
-
-
-class OrganizationBase(SQLModel):
+class VenueBase(SQLModel):
     name: str = Field(index=True)
     description: str | None = None
+    venue_type: VenueType = Field(default=VenueType.other, index=True)
+    address: str | None = None
+    city: str | None = Field(default=None, index=True)
+    state: str | None = Field(default=None, index=True)
+    zip_code: str | None = None
+    country: str = Field(default="US")
+    latitude: float | None = Field(default=None, index=True)
+    longitude: float | None = Field(default=None, index=True)
+    phone: str | None = None
+    email: str | None = None
+    website: str | None = None
+    logo_url: str | None = None
+    is_virtual: bool = Field(default=False)
 
 
-class Organization(OrganizationBase, Timestamped, table=True):
+class Venue(VenueBase, Timestamped, table=True):
     id: int | None = Field(default=None, primary_key=True)
     owner_id: int = Field(foreign_key="user.id", index=True)
 
-    owner: User = Relationship(back_populates="orgs")
-    leagues: list["League"] = Relationship(back_populates="org")
-    posts: list["Post"] = Relationship(back_populates="org")
+    members: list["VenueMember"] = Relationship(back_populates="venue")
+    sports: list["VenueSport"] = Relationship(back_populates="venue")
+    leagues: list["League"] = Relationship(back_populates="venue")
+    posts: list["Post"] = Relationship(back_populates="venue")
 
 
-class OrganizationCreate(OrganizationBase):
-    pass
+class VenueMember(Timestamped, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    venue_id: int = Field(foreign_key="venue.id", index=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    role: VenueRole = Field(default=VenueRole.staff, index=True)
+
+    venue: Venue = Relationship(back_populates="members")
+    user: User = Relationship(back_populates="venue_memberships")
 
 
-class OrganizationRead(OrganizationBase, Timestamped):
-    id: int
-    owner_id: int
+class Sport(Timestamped, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(index=True, unique=True)
+    category: SportCategory = Field(index=True)
+    description: str | None = None
+    icon: str | None = None
+    scoring_type: ScoringType = Field(default=ScoringType.points)
+    team_based: bool = Field(default=True)
+    min_players_per_team: int = Field(default=1)
+    max_players_per_team: int | None = None
+    is_online: bool = Field(default=False)
+    scoring_rules: str | None = None
+    standings_rules: str | None = None
+
+
+class VenueSport(Timestamped, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    venue_id: int = Field(foreign_key="venue.id", index=True)
+    sport_id: int = Field(foreign_key="sport.id", index=True)
+
+    venue: Venue = Relationship(back_populates="sports")
+    sport: Sport = Relationship()
 
 
 class LeagueBase(SQLModel):
     name: str = Field(index=True)
-    sport: str | None = Field(default=None, index=True)
-    season: str | None = Field(default=None, index=True)
+    description: str | None = None
+    registration_mode: RegistrationMode = Field(default=RegistrationMode.open, index=True)
+    registration_fee: float | None = None
+    max_participants: int | None = None
+    min_participants: int | None = None
+    is_active: bool = Field(default=True, index=True)
 
 
 class League(LeagueBase, Timestamped, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    org_id: int = Field(foreign_key="organization.id", index=True)
+    venue_id: int = Field(foreign_key="venue.id", index=True)
+    sport_id: int = Field(foreign_key="sport.id", index=True)
 
-    org: Organization = Relationship(back_populates="leagues")
+    venue: Venue = Relationship(back_populates="leagues")
+    sport: Sport = Relationship()
+    seasons: list["Season"] = Relationship(back_populates="league")
+    registrations: list["Registration"] = Relationship(back_populates="league")
     teams: list["Team"] = Relationship(back_populates="league")
-    games: list["Game"] = Relationship(back_populates="league")
 
 
-class LeagueCreate(LeagueBase):
-    org_id: int
+class SeasonBase(SQLModel):
+    name: str = Field(index=True)
+    start_date: datetime | None = Field(default=None, index=True)
+    end_date: datetime | None = Field(default=None, index=True)
+    is_active: bool = Field(default=True, index=True)
+    registration_open: bool = Field(default=True)
+    registration_deadline: datetime | None = None
 
 
-class LeagueRead(LeagueBase, Timestamped):
-    id: int
-    org_id: int
+class Season(SeasonBase, Timestamped, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    league_id: int = Field(foreign_key="league.id", index=True)
+
+    league: League = Relationship(back_populates="seasons")
+    games: list["Game"] = Relationship(back_populates="season")
+
+
+class Registration(Timestamped, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    league_id: int = Field(foreign_key="league.id", index=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    team_id: int | None = Field(default=None, foreign_key="team.id", index=True)
+    status: RegistrationStatus = Field(default=RegistrationStatus.pending, index=True)
+    role: LeagueRole = Field(default=LeagueRole.participant, index=True)
+    payment_status: str | None = Field(default=None, index=True)
+    payment_amount: float | None = None
+    notes: str | None = None
+
+    league: League = Relationship(back_populates="registrations")
+    user: User = Relationship(back_populates="registrations")
+    team: Optional["Team"] = Relationship(back_populates="registrations")
 
 
 class TeamBase(SQLModel):
     name: str = Field(index=True)
     city: str | None = None
+    logo_url: str | None = None
 
 
 class Team(TeamBase, Timestamped, table=True):
     id: int | None = Field(default=None, primary_key=True)
     league_id: int = Field(foreign_key="league.id", index=True)
+    captain_id: int | None = Field(default=None, foreign_key="user.id", index=True)
 
     league: League = Relationship(back_populates="teams")
     players: list["Player"] = Relationship(back_populates="team")
-
-
-class TeamCreate(TeamBase):
-    league_id: int
-
-
-class TeamRead(TeamBase, Timestamped):
-    id: int
-    league_id: int
+    registrations: list["Registration"] = Relationship(back_populates="team")
 
 
 class PlayerBase(SQLModel):
@@ -106,77 +240,93 @@ class PlayerBase(SQLModel):
     last_name: str
     position: str | None = Field(default=None, index=True)
     number: int | None = None
+    handicap: float | None = None
+    ghin_number: str | None = None
 
 
 class Player(PlayerBase, Timestamped, table=True):
     id: int | None = Field(default=None, primary_key=True)
     team_id: int = Field(foreign_key="team.id", index=True)
+    user_id: int | None = Field(default=None, foreign_key="user.id", index=True)
 
     team: Team = Relationship(back_populates="players")
 
 
-class PlayerCreate(PlayerBase):
-    team_id: int
-
-
-class PlayerRead(PlayerBase, Timestamped):
-    id: int
-    team_id: int
-
-
 class GameBase(SQLModel):
     start_time: datetime | None = Field(default=None, index=True)
+    end_time: datetime | None = None
     location: str | None = None
-    status: str = Field(default="scheduled", index=True)  # scheduled|in_progress|final
+    status: GameStatus = Field(default=GameStatus.scheduled, index=True)
     home_score: int | None = None
     away_score: int | None = None
+    notes: str | None = None
 
 
 class Game(GameBase, Timestamped, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    league_id: int = Field(foreign_key="league.id", index=True)
-    home_team_id: int = Field(foreign_key="team.id", index=True)
-    away_team_id: int = Field(foreign_key="team.id", index=True)
+    season_id: int = Field(foreign_key="season.id", index=True)
+    home_team_id: int | None = Field(default=None, foreign_key="team.id", index=True)
+    away_team_id: int | None = Field(default=None, foreign_key="team.id", index=True)
+    home_player_id: int | None = Field(default=None, foreign_key="user.id", index=True)
+    away_player_id: int | None = Field(default=None, foreign_key="user.id", index=True)
 
-    league: League = Relationship(back_populates="games")
-
-
-class GameCreate(GameBase):
-    league_id: int
-    home_team_id: int
-    away_team_id: int
+    season: Season = Relationship(back_populates="games")
+    score_submissions: list["ScoreSubmission"] = Relationship(back_populates="game")
 
 
-class GameRead(GameBase, Timestamped):
-    id: int
-    league_id: int
-    home_team_id: int
-    away_team_id: int
+class ScoreSubmission(Timestamped, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    game_id: int = Field(foreign_key="game.id", index=True)
+    submitted_by: int = Field(foreign_key="user.id", index=True)
+    home_score: int | None = None
+    away_score: int | None = None
+    details: str | None = None
+    is_verified: bool = Field(default=False)
+    verified_by: int | None = Field(default=None, foreign_key="user.id")
+    verified_at: datetime | None = None
+
+    game: Game = Relationship(back_populates="score_submissions")
 
 
 class PostBase(SQLModel):
     title: str = Field(index=True)
     body: str
+    is_pinned: bool = Field(default=False)
+    post_type: str = Field(default="general", index=True)
 
 
 class Post(PostBase, Timestamped, table=True):
     id: int | None = Field(default=None, primary_key=True)
     author_id: int = Field(foreign_key="user.id", index=True)
-    org_id: int | None = Field(default=None, foreign_key="organization.id", index=True)
+    venue_id: int | None = Field(default=None, foreign_key="venue.id", index=True)
     league_id: int | None = Field(default=None, foreign_key="league.id", index=True)
 
     author: User = Relationship(back_populates="posts")
-    org: Optional[Organization] = Relationship(back_populates="posts")
+    venue: Optional[Venue] = Relationship(back_populates="posts")
 
 
-class PostCreate(PostBase):
-    org_id: int | None = None
-    league_id: int | None = None
+class Prediction(Timestamped, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    game_id: int = Field(foreign_key="game.id", index=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    predicted_winner_team_id: int | None = Field(default=None, foreign_key="team.id")
+    predicted_winner_user_id: int | None = Field(default=None, foreign_key="user.id")
+    confidence_points: int = Field(default=1, ge=1, le=10)
+    is_correct: bool | None = None
+    points_earned: int | None = None
 
 
-class PostRead(PostBase, Timestamped):
-    id: int
-    author_id: int
-    org_id: int | None
-    league_id: int | None
-
+class Standing(Timestamped, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    season_id: int = Field(foreign_key="season.id", index=True)
+    team_id: int | None = Field(default=None, foreign_key="team.id", index=True)
+    user_id: int | None = Field(default=None, foreign_key="user.id", index=True)
+    rank: int = Field(default=0, index=True)
+    wins: int = Field(default=0)
+    losses: int = Field(default=0)
+    ties: int = Field(default=0)
+    points: float = Field(default=0)
+    games_played: int = Field(default=0)
+    points_for: int = Field(default=0)
+    points_against: int = Field(default=0)
+    custom_stats: str | None = None

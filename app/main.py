@@ -9,7 +9,20 @@ from app.core.config import settings
 from app.core.limiter import limiter
 from app.core.logging import generate_request_id, request_id_var, setup_logging
 from app.db import init_db
-from app.routers import ai, auth, games, leagues, orgs, players, posts, teams, users
+from app.routers import (
+    ai,
+    auth,
+    games,
+    leagues,
+    players,
+    posts,
+    registrations,
+    seasons,
+    sports,
+    teams,
+    users,
+    venues,
+)
 
 
 @asynccontextmanager
@@ -70,8 +83,11 @@ from app.routers import metrics, realtime
 
 app.include_router(auth.router)
 app.include_router(users.router)
-app.include_router(orgs.router)
+app.include_router(venues.router)
+app.include_router(sports.router)
 app.include_router(leagues.router)
+app.include_router(seasons.router)
+app.include_router(registrations.router)
 app.include_router(teams.router)
 app.include_router(players.router)
 app.include_router(games.router)

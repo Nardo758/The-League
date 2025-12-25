@@ -19,33 +19,62 @@ def get_auth_header(client: TestClient, email: str = "testuser@example.com"):
     return {"Authorization": f"Bearer {token}"}
 
 
-def test_create_organization(client: TestClient):
+def create_sport(client: TestClient, headers: dict, name: str = "Test Sport"):
+    response = client.post(
+        "/sports",
+        json={
+            "name": name,
+            "category": "golf",
+            "scoring_type": "stroke_play",
+            "team_based": False
+        },
+        headers=headers
+    )
+    return response.json()
+
+
+def create_venue(client: TestClient, headers: dict, name: str = "Test Venue"):
+    response = client.post(
+        "/venues",
+        json={
+            "name": name,
+            "description": "Test Description",
+            "venue_type": "golf_course",
+            "city": "Phoenix",
+            "state": "AZ"
+        },
+        headers=headers
+    )
+    return response.json()
+
+
+def test_create_venue(client: TestClient):
     headers = get_auth_header(client)
     response = client.post(
-        "/orgs",
-        json={"name": "Test Org", "description": "Test Description"},
+        "/venues",
+        json={"name": "Test Venue", "description": "Test Description", "venue_type": "golf_course"},
         headers=headers
     )
     assert response.status_code == 201
     data = response.json()
-    assert data["name"] == "Test Org"
+    assert data["name"] == "Test Venue"
     assert "id" in data
 
 
-def test_get_organizations(client: TestClient):
+def test_get_venues(client: TestClient):
     headers = get_auth_header(client)
     client.post(
-        "/orgs",
-        json={"name": "Org 1"},
+        "/venues",
+        json={"name": "Venue 1", "venue_type": "golf_course"},
         headers=headers
     )
     client.post(
-        "/orgs",
-        json={"name": "Org 2"},
+        "/venues",
+        json={"name": "Venue 2", "venue_type": "bowling_alley"},
         headers=headers
     )
 
-    response = client.get("/orgs", headers=headers)
+    response = client.get("/venues", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert "items" in data
@@ -55,16 +84,16 @@ def test_get_organizations(client: TestClient):
     assert len(data["items"]) >= 2
 
 
-def test_get_organizations_pagination(client: TestClient):
+def test_get_venues_pagination(client: TestClient):
     headers = get_auth_header(client)
     for i in range(5):
         client.post(
-            "/orgs",
-            json={"name": f"Pagination Org {i}"},
+            "/venues",
+            json={"name": f"Pagination Venue {i}", "venue_type": "golf_course"},
             headers=headers
         )
 
-    response = client.get("/orgs?page=1&page_size=2", headers=headers)
+    response = client.get("/venues?page=1&page_size=2", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert len(data["items"]) == 2
@@ -73,49 +102,59 @@ def test_get_organizations_pagination(client: TestClient):
     assert data["total"] >= 5
 
 
-def test_create_league(client: TestClient):
+def test_create_sport(client: TestClient):
     headers = get_auth_header(client)
-    org_response = client.post(
-        "/orgs",
-        json={"name": "League Test Org"},
+    response = client.post(
+        "/sports",
+        json={
+            "name": "Golf",
+            "category": "golf",
+            "scoring_type": "stroke_play",
+            "team_based": False
+        },
         headers=headers
     )
-    org_id = org_response.json()["id"]
+    assert response.status_code == 201
+    data = response.json()
+    assert data["name"] == "Golf"
+    assert data["category"] == "golf"
+
+
+def test_create_league(client: TestClient):
+    headers = get_auth_header(client)
+    venue = create_venue(client, headers, "League Test Venue")
+    sport = create_sport(client, headers, "League Sport")
 
     response = client.post(
         "/leagues",
         json={
             "name": "Test League",
-            "sport": "Basketball",
-            "season": "2024",
-            "org_id": org_id
+            "venue_id": venue["id"],
+            "sport_id": sport["id"],
+            "registration_mode": "open"
         },
         headers=headers
     )
     assert response.status_code == 201
     data = response.json()
     assert data["name"] == "Test League"
-    assert data["sport"] == "Basketball"
-    assert data["org_id"] == org_id
+    assert data["venue_id"] == venue["id"]
+    assert data["sport_id"] == sport["id"]
 
 
 def test_get_leagues(client: TestClient):
     headers = get_auth_header(client)
-    org_response = client.post(
-        "/orgs",
-        json={"name": "Multi League Org"},
-        headers=headers
-    )
-    org_id = org_response.json()["id"]
+    venue = create_venue(client, headers, "Multi League Venue")
+    sport = create_sport(client, headers, "Multi Sport")
 
     client.post(
         "/leagues",
-        json={"name": "League A", "org_id": org_id},
+        json={"name": "League A", "venue_id": venue["id"], "sport_id": sport["id"]},
         headers=headers
     )
     client.post(
         "/leagues",
-        json={"name": "League B", "org_id": org_id},
+        json={"name": "League B", "venue_id": venue["id"], "sport_id": sport["id"]},
         headers=headers
     )
 
@@ -128,16 +167,12 @@ def test_get_leagues(client: TestClient):
 
 def test_create_team(client: TestClient):
     headers = get_auth_header(client)
-    org_response = client.post(
-        "/orgs",
-        json={"name": "Team Test Org"},
-        headers=headers
-    )
-    org_id = org_response.json()["id"]
+    venue = create_venue(client, headers, "Team Test Venue")
+    sport = create_sport(client, headers, "Team Sport")
 
     league_response = client.post(
         "/leagues",
-        json={"name": "Team Test League", "org_id": org_id},
+        json={"name": "Team Test League", "venue_id": venue["id"], "sport_id": sport["id"]},
         headers=headers
     )
     league_id = league_response.json()["id"]
@@ -155,16 +190,12 @@ def test_create_team(client: TestClient):
 
 def test_update_league_partial(client: TestClient):
     headers = get_auth_header(client)
-    org_response = client.post(
-        "/orgs",
-        json={"name": "Update League Org"},
-        headers=headers
-    )
-    org_id = org_response.json()["id"]
+    venue = create_venue(client, headers, "Update League Venue")
+    sport = create_sport(client, headers, "Update Sport")
 
     league_response = client.post(
         "/leagues",
-        json={"name": "Original Name", "sport": "Soccer", "org_id": org_id},
+        json={"name": "Original Name", "venue_id": venue["id"], "sport_id": sport["id"]},
         headers=headers
     )
     league_id = league_response.json()["id"]
@@ -177,7 +208,6 @@ def test_update_league_partial(client: TestClient):
     assert response.status_code == 200
     data = response.json()
     assert data["name"] == "Updated Name"
-    assert data["sport"] == "Soccer"
 
 
 def test_health_endpoint(client: TestClient):
