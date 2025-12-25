@@ -7,9 +7,9 @@ class Settings(BaseSettings):
     app_name: str = "The-League API"
     environment: str = "dev"
 
-    # Replit typically exposes HTTP on port 3000.
+    # Replit exposes HTTP on port 5000.
     host: str = "0.0.0.0"
-    port: int = 3000
+    port: int = 5000
 
     database_url: str = "sqlite:///./league.db"
 
