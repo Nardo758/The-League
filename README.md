@@ -8,11 +8,13 @@ FastAPI backend intended to run on Replit.
 - `docs/replit-deployment-architecture.md`
 - `docs/expanded-architecture-online-competitions-and-social.md`
 - `docs/realtime-latency-and-game-server.md`
+- `docs/socketio-handlers-and-client-prediction.md`
 
 Sources:
 
 - `https://chat.deepseek.com/share/xpzaf950oeem83wbbi`
 - `https://chat.deepseek.com/share/11bhdk6hlkrn0frz2l`
+- `https://chat.deepseek.com/share/bsmfz093qdygkrhvmk`
 
 ## Run (Replit)
 
