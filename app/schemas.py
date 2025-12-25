@@ -566,6 +566,35 @@ class ReactionRead(BaseModel):
     created_at: datetime
 
 
+class NotificationType(str, Enum):
+    new_league = "new_league"
+    registration_deadline = "registration_deadline"
+    registration_approved = "registration_approved"
+    registration_rejected = "registration_rejected"
+    game_scheduled = "game_scheduled"
+    game_result = "game_result"
+    score_verified = "score_verified"
+    prediction_resolved = "prediction_resolved"
+    new_post = "new_post"
+    comment_reply = "comment_reply"
+    mention = "mention"
+
+
+class NotificationRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    user_id: int
+    notification_type: str
+    title: str
+    message: str
+    link: str | None
+    is_read: bool
+    related_id: int | None
+    related_type: str | None
+    created_at: datetime
+
+
 def paginate(items: list, total: int, page: int, page_size: int) -> dict:
     pages = (total + page_size - 1) // page_size if page_size > 0 else 0
     return {

@@ -206,12 +206,14 @@ class Season(SeasonBase, Timestamped, table=True):
 class Registration(Timestamped, table=True):
     id: int | None = Field(default=None, primary_key=True)
     league_id: int = Field(foreign_key="league.id", index=True)
+    season_id: int | None = Field(default=None, foreign_key="season.id", index=True)
     user_id: int = Field(foreign_key="user.id", index=True)
     team_id: int | None = Field(default=None, foreign_key="team.id", index=True)
     status: RegistrationStatus = Field(default=RegistrationStatus.pending, index=True)
     role: LeagueRole = Field(default=LeagueRole.participant, index=True)
     payment_status: str | None = Field(default=None, index=True)
     payment_amount: float | None = None
+    payment_intent_id: str | None = Field(default=None, index=True)
     notes: str | None = None
 
     league: League = Relationship(back_populates="registrations")
@@ -349,9 +351,35 @@ class ReactionType(str, Enum):
     curious = "curious"
 
 
+class NotificationType(str, Enum):
+    new_league = "new_league"
+    registration_deadline = "registration_deadline"
+    registration_approved = "registration_approved"
+    registration_rejected = "registration_rejected"
+    game_scheduled = "game_scheduled"
+    game_result = "game_result"
+    score_verified = "score_verified"
+    prediction_resolved = "prediction_resolved"
+    new_post = "new_post"
+    comment_reply = "comment_reply"
+    mention = "mention"
+
+
 class Reaction(Timestamped, table=True):
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", index=True)
     post_id: int | None = Field(default=None, foreign_key="post.id", index=True)
     comment_id: int | None = Field(default=None, foreign_key="comment.id", index=True)
     reaction_type: ReactionType = Field(default=ReactionType.like, index=True)
+
+
+class Notification(Timestamped, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    notification_type: NotificationType = Field(index=True)
+    title: str
+    message: str
+    link: str | None = None
+    is_read: bool = Field(default=False, index=True)
+    related_id: int | None = None
+    related_type: str | None = None

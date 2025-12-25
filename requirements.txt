@@ -19,3 +19,4 @@ slowapi
 tenacity
 anthropic
 email-validator
+stripe
