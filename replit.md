@@ -4,6 +4,11 @@
 FastAPI backend for a two-sided marketplace platform connecting athletes with recreational sports leagues. Venues (golf courses, bowling alleys, sports complexes, esports arenas) create and manage leagues for various sports. Supports league discovery via geolocation, participant registration, score posting, standings tracking, social features, and prediction/pick'em systems.
 
 ## Recent Changes
+- 2024-12-25: Added Tournament bracket system with single elimination, bye handling, and match progression
+- 2024-12-25: Built Online Games engine (Connect 4, Checkers, Battleship, Chess) with move validation
+- 2024-12-25: Added Matchmaking system with ELO ratings and ranked games
+- 2024-12-25: Integrated Stripe payments with checkout sessions and webhooks
+- 2024-12-25: Added Notifications system with 11 notification types and batch operations
 - 2024-12-25: Added Comments and Reactions for social features (nested comments, multiple reaction types)
 - 2024-12-25: Added Predictions/Pick'em system with leaderboard
 - 2024-12-25: Added Standings calculation by sport scoring type (wins_losses, stroke_play, points)
@@ -56,7 +61,18 @@ app/
 │   ├── predictions.py # Pick'em system with leaderboard
 │   ├── comments.py    # Comments and reactions on posts
 │   ├── posts.py       # Bulletin board / announcements
-│   └── users.py       # User management
+│   ├── users.py       # User management
+│   ├── online_games.py # Online games with move validation
+│   ├── tournaments.py  # Tournament brackets and match progression
+│   ├── notifications.py # User notifications system
+│   └── payments.py    # Stripe checkout and webhooks
+├── game_engines/
+│   ├── base.py        # Abstract GameEngine base class
+│   ├── connect4.py    # Connect 4 logic
+│   ├── checkers.py    # Checkers with king promotion
+│   ├── battleship.py  # Battleship ship placement and attacks
+│   └── chess.py       # Chess move validation
+├── stripe_client.py   # Stripe API integration
 ├── db.py              # Database connection (SQLite/PostgreSQL)
 ├── deps.py            # FastAPI dependencies
 ├── main.py            # Application entry point
@@ -91,6 +107,21 @@ tests/                 # pytest test suite (19 tests)
 - `POST /comments` - Add comment to post
 - `POST /comments/reactions` - Add/update reaction
 - `GET /comments/reactions/posts/{id}` - Get reaction counts
+
+### Online Games & Tournaments
+- `POST /online-games` - Create new game
+- `POST /online-games/{id}/move` - Make a move
+- `POST /online-games/matchmaking/search` - Find opponent with ELO matching
+- `POST /tournaments` - Create tournament
+- `POST /tournaments/{id}/register` - Join tournament
+- `POST /tournaments/{id}/start` - Generate bracket (organizer only)
+- `POST /tournaments/{id}/matches/{match_id}/report` - Report result
+
+### Payments & Notifications
+- `POST /payments/create-checkout` - Create Stripe checkout session
+- `POST /payments/webhook` - Handle Stripe webhooks
+- `GET /notifications` - List user notifications
+- `POST /notifications/{id}/read` - Mark notification as read
 
 ## Data Models
 
@@ -128,7 +159,11 @@ pytest tests/test_leagues.py # Venue/League tests
 
 ## Remaining Tasks
 - Golf: GHIN API integration for handicap sync
-- Online Games: Game engines for chess, checkers, connect 4, battleship
-- Payments: Stripe integration for registration fees
-- Notifications: Alerts for new leagues, deadlines, results
 - Frontend: Next.js + Tailwind with Polymarket-inspired design
+
+## Completed Features
+- Online Games: Connect 4, Checkers, Battleship, Chess with full move validation
+- Payments: Stripe checkout sessions and webhook handling
+- Notifications: 11 notification types with unread tracking
+- Tournaments: Single elimination brackets with bye handling
+- Matchmaking: ELO-based ranking with preferred time limits
