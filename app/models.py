@@ -83,6 +83,19 @@ class OnlineGameStatus(str, Enum):
     abandoned = "abandoned"
 
 
+class TournamentFormat(str, Enum):
+    single_elimination = "single_elimination"
+    double_elimination = "double_elimination"
+    round_robin = "round_robin"
+
+
+class TournamentStatus(str, Enum):
+    registration = "registration"
+    in_progress = "in_progress"
+    completed = "completed"
+    cancelled = "cancelled"
+
+
 class VenueRole(str, Enum):
     owner = "owner"
     admin = "admin"
@@ -428,3 +441,46 @@ class OnlineGameMatch(Timestamped, table=True):
     is_searching: bool = Field(default=True, index=True)
     elo_rating: int = Field(default=1200)
     preferred_time_limit: int | None = None
+
+
+class Tournament(Timestamped, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(index=True)
+    description: str | None = None
+    game_type: OnlineGameType = Field(index=True)
+    format: TournamentFormat = Field(default=TournamentFormat.single_elimination)
+    status: TournamentStatus = Field(default=TournamentStatus.registration, index=True)
+    max_participants: int = Field(default=16)
+    organizer_id: int = Field(foreign_key="user.id", index=True)
+    season_id: int | None = Field(default=None, foreign_key="season.id", index=True)
+    league_id: int | None = Field(default=None, foreign_key="league.id", index=True)
+    registration_deadline: datetime | None = None
+    start_time: datetime | None = None
+    current_round: int = Field(default=0)
+    winner_id: int | None = Field(default=None, foreign_key="user.id", index=True)
+
+
+class TournamentParticipant(Timestamped, table=True):
+    __tablename__ = "tournament_participant"
+
+    id: int | None = Field(default=None, primary_key=True)
+    tournament_id: int = Field(foreign_key="tournament.id", index=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    seed: int | None = None
+    is_eliminated: bool = Field(default=False)
+    final_placement: int | None = None
+
+
+class TournamentMatch(Timestamped, table=True):
+    __tablename__ = "tournament_match"
+
+    id: int | None = Field(default=None, primary_key=True)
+    tournament_id: int = Field(foreign_key="tournament.id", index=True)
+    round_number: int = Field(index=True)
+    match_number: int
+    player1_id: int | None = Field(default=None, foreign_key="user.id", index=True)
+    player2_id: int | None = Field(default=None, foreign_key="user.id", index=True)
+    winner_id: int | None = Field(default=None, foreign_key="user.id", index=True)
+    online_game_id: int | None = Field(default=None, foreign_key="online_game.id", index=True)
+    next_match_id: int | None = Field(default=None, foreign_key="tournament_match.id")
+    is_bye: bool = Field(default=False)
