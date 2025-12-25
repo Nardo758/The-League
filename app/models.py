@@ -330,3 +330,28 @@ class Standing(Timestamped, table=True):
     points_for: int = Field(default=0)
     points_against: int = Field(default=0)
     custom_stats: str | None = None
+
+
+class Comment(Timestamped, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    post_id: int = Field(foreign_key="post.id", index=True)
+    author_id: int = Field(foreign_key="user.id", index=True)
+    parent_id: int | None = Field(default=None, foreign_key="comment.id", index=True)
+    body: str
+    is_deleted: bool = Field(default=False)
+
+
+class ReactionType(str, Enum):
+    like = "like"
+    love = "love"
+    celebrate = "celebrate"
+    insightful = "insightful"
+    curious = "curious"
+
+
+class Reaction(Timestamped, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    post_id: int | None = Field(default=None, foreign_key="post.id", index=True)
+    comment_id: int | None = Field(default=None, foreign_key="comment.id", index=True)
+    reaction_type: ReactionType = Field(default=ReactionType.like, index=True)

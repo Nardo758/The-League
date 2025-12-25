@@ -120,9 +120,24 @@ def resolve_predictions(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
+    from app.models import VenueMember, VenueRole
+
     game = session.get(Game, game_id)
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
+
+    season = session.get(Season, game.season_id)
+    league = session.get(League, season.league_id)
+
+    member = session.exec(
+        select(VenueMember).where(
+            VenueMember.venue_id == league.venue_id,
+            VenueMember.user_id == current_user.id,
+            VenueMember.role.in_([VenueRole.owner, VenueRole.admin, VenueRole.staff])
+        )
+    ).first()
+    if not member:
+        raise HTTPException(status_code=403, detail="Only venue staff can resolve predictions")
 
     if game.status != GameStatus.final:
         raise HTTPException(status_code=400, detail="Game must be finalized before resolving predictions")

@@ -519,6 +519,53 @@ class LocationSearch(BaseModel):
     radius_miles: float = Field(default=25, ge=1, le=500)
 
 
+class ReactionType(str, Enum):
+    like = "like"
+    love = "love"
+    celebrate = "celebrate"
+    insightful = "insightful"
+    curious = "curious"
+
+
+class CommentCreate(BaseModel):
+    post_id: int
+    body: str = Field(..., min_length=1, max_length=10000)
+    parent_id: int | None = None
+
+
+class CommentUpdate(BaseModel):
+    body: str = Field(..., min_length=1, max_length=10000)
+
+
+class CommentRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    post_id: int
+    author_id: int
+    parent_id: int | None
+    body: str
+    is_deleted: bool
+    created_at: datetime
+
+
+class ReactionCreate(BaseModel):
+    post_id: int | None = None
+    comment_id: int | None = None
+    reaction_type: ReactionType = ReactionType.like
+
+
+class ReactionRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    user_id: int
+    post_id: int | None
+    comment_id: int | None
+    reaction_type: str
+    created_at: datetime
+
+
 def paginate(items: list, total: int, page: int, page_size: int) -> dict:
     pages = (total + page_size - 1) // page_size if page_size > 0 else 0
     return {
