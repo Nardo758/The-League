@@ -69,6 +69,20 @@ class GameStatus(str, Enum):
     postponed = "postponed"
 
 
+class OnlineGameType(str, Enum):
+    chess = "chess"
+    checkers = "checkers"
+    connect_four = "connect_four"
+    battleship = "battleship"
+
+
+class OnlineGameStatus(str, Enum):
+    waiting = "waiting"
+    in_progress = "in_progress"
+    completed = "completed"
+    abandoned = "abandoned"
+
+
 class VenueRole(str, Enum):
     owner = "owner"
     admin = "admin"
@@ -383,3 +397,34 @@ class Notification(Timestamped, table=True):
     is_read: bool = Field(default=False, index=True)
     related_id: int | None = None
     related_type: str | None = None
+
+
+class OnlineGame(Timestamped, table=True):
+    __tablename__ = "online_game"
+
+    id: int | None = Field(default=None, primary_key=True)
+    game_type: OnlineGameType = Field(index=True)
+    status: OnlineGameStatus = Field(default=OnlineGameStatus.waiting, index=True)
+    player1_id: int = Field(foreign_key="user.id", index=True)
+    player2_id: int | None = Field(default=None, foreign_key="user.id", index=True)
+    current_turn: int | None = None
+    winner_id: int | None = Field(default=None, foreign_key="user.id", index=True)
+    board_state: str | None = None
+    moves_history: str | None = None
+    season_id: int | None = Field(default=None, foreign_key="season.id", index=True)
+    league_id: int | None = Field(default=None, foreign_key="league.id", index=True)
+    is_ranked: bool = Field(default=False)
+    time_limit_seconds: int | None = None
+    player1_time_remaining: int | None = None
+    player2_time_remaining: int | None = None
+
+
+class OnlineGameMatch(Timestamped, table=True):
+    __tablename__ = "online_game_match"
+
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    game_type: OnlineGameType = Field(index=True)
+    is_searching: bool = Field(default=True, index=True)
+    elo_rating: int = Field(default=1200)
+    preferred_time_limit: int | None = None

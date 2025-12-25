@@ -16,6 +16,7 @@ from app.routers import (
     games,
     leagues,
     notifications,
+    online_games,
     payments,
     players,
     posts,
@@ -100,6 +101,7 @@ app.include_router(standings.router)
 app.include_router(predictions.router)
 app.include_router(comments.router)
 app.include_router(notifications.router)
+app.include_router(online_games.router)
 app.include_router(payments.router)
 app.include_router(posts.router)
 app.include_router(ai.router)
