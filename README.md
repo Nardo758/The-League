@@ -2,6 +2,14 @@
 
 FastAPI backend intended to run on Replit.
 
+## Architecture docs (imported from DeepSeek share)
+
+- `docs/league-platform-system-architecture.md`
+- `docs/replit-deployment-architecture.md`
+- `docs/expanded-architecture-online-competitions-and-social.md`
+
+Source: `https://chat.deepseek.com/share/xpzaf950oeem83wbbi`
+
 ## Run (Replit)
 
 - Replit uses `.replit` which runs:
