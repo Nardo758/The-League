@@ -73,6 +73,18 @@ class GameStateResponse(BaseModel):
     winner_id: int | None
 
 
+class SpectatorGameResponse(BaseModel):
+    id: int
+    game_type: str
+    status: str
+    board_state: dict | None
+    current_turn: int | None
+    player1_id: int
+    player2_id: int | None
+    winner_id: int | None
+    is_ranked: bool
+
+
 class MatchmakingRequest(BaseModel):
     game_type: OnlineGameType
     preferred_time_limit: int | None = None
@@ -435,6 +447,40 @@ def get_game_state(
         valid_moves=valid_moves,
         is_your_turn=is_your_turn,
         winner_id=game.winner_id
+    )
+
+
+@router.get("/{game_id}/spectate", response_model=SpectatorGameResponse)
+def spectate_game(
+    game_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    game = session.get(OnlineGame, game_id)
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    engine = get_engine(game.game_type)
+    state = engine.deserialize_state(game.board_state) if game.board_state else {}
+    
+    if game.game_type == OnlineGameType.battleship:
+        if game.status == OnlineGameStatus.completed:
+            board_state = state
+        else:
+            board_state = {"message": "Ship positions hidden until game ends"}
+    else:
+        board_state = state
+    
+    return SpectatorGameResponse(
+        id=game.id,
+        game_type=game.game_type.value,
+        status=game.status.value,
+        board_state=board_state,
+        current_turn=game.current_turn,
+        player1_id=game.player1_id,
+        player2_id=game.player2_id,
+        winner_id=game.winner_id,
+        is_ranked=game.is_ranked
     )
 
 

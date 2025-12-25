@@ -115,6 +115,7 @@ tests/                 # pytest test suite (19 tests)
 - `POST /online-games/{id}/accept` - Accept a challenge
 - `POST /online-games/{id}/decline` - Decline a challenge
 - `POST /online-games/{id}/move` - Make a move
+- `GET /online-games/{id}/spectate` - Watch a game (anyone can view)
 - `POST /online-games/matchmaking/search` - Find opponent with ELO matching
 - `POST /tournaments` - Create tournament
 - `POST /tournaments/{id}/register` - Join tournament
