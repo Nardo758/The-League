@@ -4,6 +4,7 @@
 FastAPI backend for a league management platform supporting organizations, leagues, teams, players, games, and announcements. Includes AI integration, realtime capabilities, and comprehensive security features.
 
 ## Recent Changes
+- 2024-12-25: Switched AI integration from OpenAI to Anthropic Claude (claude-sonnet-4-5)
 - 2024-12-25: Added documentation structure (docs/roadmap.md, docs/adr/)
 - 2024-12-25: Implemented AI router with rate limiting and audit logging
 - 2024-12-25: Added realtime token endpoints for Socket.IO integration
@@ -74,7 +75,8 @@ tests/                 # pytest test suite
 | `DATABASE_URL` | No | `sqlite:///./league.db` | Database connection URL |
 | `CORS_ORIGINS` | No | `*` | Comma-separated allowed origins |
 | `ENVIRONMENT` | No | `dev` | `dev` or `production` |
-| `OPENAI_API_KEY` | No | - | Required for AI features |
+| `AI_INTEGRATIONS_ANTHROPIC_API_KEY` | Auto | - | Set by Replit AI Integrations |
+| `AI_INTEGRATIONS_ANTHROPIC_BASE_URL` | Auto | - | Set by Replit AI Integrations |
 | `AI_REQUESTS_PER_HOUR` | No | `100` | Rate limit for AI endpoints |
 
 ## Development Commands
@@ -113,8 +115,10 @@ The app is configured to run on port 5000 with the workflow "Backend API". The D
 - Request ID tracking for observability
 
 ## AI Integration
-AI features use OpenAI's API (requires OPENAI_API_KEY). All AI requests are:
-- Rate limited per user
+AI features use Anthropic Claude (claude-sonnet-4-5) via Replit AI Integrations. This means:
+- No separate API key required - automatically configured by Replit
+- Charges are billed to your Replit credits
+- Rate limited per user (100 requests/hour by default)
 - Audit logged with timestamps and token counts
 - Subject to data handling policy (see `GET /ai/policy`)
 

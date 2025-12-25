@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -24,7 +25,7 @@ class ChatMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: list[ChatMessage] = Field(..., min_length=1, max_length=20)
-    max_tokens: int = Field(default=1024, ge=1, le=4096)
+    max_tokens: int = Field(default=1024, ge=1, le=8192)
 
 
 class ChatResponse(BaseModel):
@@ -41,26 +42,29 @@ class AIDataPolicy(BaseModel):
     third_party: str
 
 
-def get_openai_client() -> Any:
-    if not ai_settings.openai_api_key:
+def get_anthropic_client() -> Any:
+    api_key = os.environ.get("AI_INTEGRATIONS_ANTHROPIC_API_KEY", ai_settings.anthropic_api_key)
+    base_url = os.environ.get("AI_INTEGRATIONS_ANTHROPIC_BASE_URL", ai_settings.anthropic_base_url)
+    
+    if not api_key or not base_url:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="AI service not configured. Please set OPENAI_API_KEY."
+            detail="AI service not configured. Anthropic integration not set up."
         )
     try:
-        from openai import OpenAI
-        return OpenAI(api_key=ai_settings.openai_api_key)
+        from anthropic import Anthropic
+        return Anthropic(api_key=api_key, base_url=base_url)
     except ImportError:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="OpenAI client not available"
+            detail="Anthropic client not available"
         )
 
 
 @router.get("/policy", response_model=AIDataPolicy)
 def get_ai_data_policy() -> AIDataPolicy:
     return AIDataPolicy(
-        policy_version="1.0",
+        policy_version="1.1",
         data_sent=[
             "User-provided message content",
             "League/team/game public names (if referenced)",
@@ -73,7 +77,7 @@ def get_ai_data_policy() -> AIDataPolicy:
             "Payment information"
         ],
         retention="AI requests are logged for 30 days for debugging and audit purposes. Message content is not stored.",
-        third_party="Requests are processed by OpenAI. See OpenAI's privacy policy for their data handling."
+        third_party="Requests are processed by Anthropic (Claude). See Anthropic's privacy policy for their data handling."
     )
 
 
@@ -85,44 +89,55 @@ def chat_completion(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ) -> ChatResponse:
-    client = get_openai_client()
+    client = get_anthropic_client()
 
-    messages = [{"role": m.role, "content": m.content} for m in payload.messages]
+    system_content = None
+    messages = []
+    for m in payload.messages:
+        if m.role == "system":
+            system_content = m.content
+        else:
+            messages.append({"role": m.role, "content": m.content})
 
     try:
-        response = client.chat.completions.create(
-            model=ai_settings.openai_model,
-            messages=messages,
-            max_tokens=min(payload.max_tokens, ai_settings.ai_max_tokens)
-        )
+        create_kwargs = {
+            "model": ai_settings.anthropic_model,
+            "max_tokens": min(payload.max_tokens, ai_settings.ai_max_tokens),
+            "messages": messages
+        }
+        if system_content:
+            create_kwargs["system"] = system_content
 
-        result = response.choices[0].message.content or ""
+        response = client.messages.create(**create_kwargs)
+
+        result = response.content[0].text if response.content and response.content[0].type == "text" else ""
+        
         usage = None
         if response.usage:
             usage = {
-                "prompt_tokens": response.usage.prompt_tokens,
-                "completion_tokens": response.usage.completion_tokens,
-                "total_tokens": response.usage.total_tokens
+                "input_tokens": response.usage.input_tokens,
+                "output_tokens": response.usage.output_tokens,
+                "total_tokens": response.usage.input_tokens + response.usage.output_tokens
             }
             log_ai_request(
                 user_id=current_user.id,
                 endpoint="/ai/chat",
-                model=ai_settings.openai_model,
-                input_tokens=response.usage.prompt_tokens,
-                output_tokens=response.usage.completion_tokens,
+                model=ai_settings.anthropic_model,
+                input_tokens=response.usage.input_tokens,
+                output_tokens=response.usage.output_tokens,
                 status="success"
             )
         else:
             log_ai_request(
                 user_id=current_user.id,
                 endpoint="/ai/chat",
-                model=ai_settings.openai_model,
+                model=ai_settings.anthropic_model,
                 status="success"
             )
 
         return ChatResponse(
             message=result,
-            model=ai_settings.openai_model,
+            model=ai_settings.anthropic_model,
             usage=usage
         )
 
@@ -130,7 +145,7 @@ def chat_completion(
         log_ai_request(
             user_id=current_user.id,
             endpoint="/ai/chat",
-            model=ai_settings.openai_model,
+            model=ai_settings.anthropic_model,
             status="error",
             error=str(e)
         )
@@ -159,36 +174,36 @@ def summarize_text(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ) -> SummarizeResponse:
-    client = get_openai_client()
+    client = get_anthropic_client()
 
     try:
-        response = client.chat.completions.create(
-            model=ai_settings.openai_model,
+        response = client.messages.create(
+            model=ai_settings.anthropic_model,
+            max_tokens=ai_settings.ai_max_tokens,
+            system=f"Summarize the following text in {payload.max_length} words or less. Be concise and capture the key points.",
             messages=[
-                {"role": "system", "content": f"Summarize the following text in {payload.max_length} words or less. Be concise and capture the key points."},
                 {"role": "user", "content": payload.text}
-            ],
-            max_tokens=ai_settings.ai_max_tokens
+            ]
         )
 
-        result = response.choices[0].message.content or ""
+        result = response.content[0].text if response.content and response.content[0].type == "text" else ""
 
         log_ai_request(
             user_id=current_user.id,
             endpoint="/ai/summarize",
-            model=ai_settings.openai_model,
-            input_tokens=response.usage.prompt_tokens if response.usage else None,
-            output_tokens=response.usage.completion_tokens if response.usage else None,
+            model=ai_settings.anthropic_model,
+            input_tokens=response.usage.input_tokens if response.usage else None,
+            output_tokens=response.usage.output_tokens if response.usage else None,
             status="success"
         )
 
-        return SummarizeResponse(summary=result, model=ai_settings.openai_model)
+        return SummarizeResponse(summary=result, model=ai_settings.anthropic_model)
 
     except Exception as e:
         log_ai_request(
             user_id=current_user.id,
             endpoint="/ai/summarize",
-            model=ai_settings.openai_model,
+            model=ai_settings.anthropic_model,
             status="error",
             error=str(e)
         )

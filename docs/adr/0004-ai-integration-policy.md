@@ -1,7 +1,7 @@
 # ADR-0004: AI Integration Policy and Data Handling
 
 ## Status
-Proposed
+Accepted
 
 ## Date
 2024-12-25
@@ -14,6 +14,12 @@ We plan to add AI features to the platform. This requires clear policies on:
 
 ## Decision
 Implement AI features with the following safeguards:
+
+### AI Provider
+We use **Anthropic Claude** (claude-sonnet-4-5) via Replit AI Integrations. This provides:
+- No separate API key required
+- Charges billed to Replit credits
+- Managed infrastructure
 
 ### Data Policy
 1. **Minimal Data Principle**: Only send data necessary for the specific AI task
@@ -34,7 +40,7 @@ Implement AI features with the following safeguards:
 - Private user data
 
 ### Rate Limiting
-- Per-user request limits (e.g., 100 requests/hour)
+- Per-user request limits (100 requests/hour by default)
 - Global rate limiting to control costs
 - Graceful degradation when limits exceeded
 
@@ -52,7 +58,9 @@ Implement AI features with the following safeguards:
 - Clear compliance story for users
 - Cost control via rate limiting
 - Audit trail for debugging and accountability
+- No API key management required with Replit integration
 
 ### Negative
 - Some AI features may be limited by data restrictions
 - Rate limiting may frustrate power users
+- Dependent on Replit AI Integrations availability

@@ -17,3 +17,4 @@ pytest-asyncio
 python-json-logger
 slowapi
 tenacity
+anthropic
