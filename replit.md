@@ -4,13 +4,15 @@
 FastAPI backend for a two-sided marketplace platform connecting athletes with recreational sports leagues. Venues (golf courses, bowling alleys, sports complexes, esports arenas) create and manage leagues for various sports. Supports league discovery via geolocation, participant registration, score posting, standings tracking, social features, and prediction/pick'em systems.
 
 ## Recent Changes
+- 2024-12-25: Added Comments and Reactions for social features (nested comments, multiple reaction types)
+- 2024-12-25: Added Predictions/Pick'em system with leaderboard
+- 2024-12-25: Added Standings calculation by sport scoring type (wins_losses, stroke_play, points)
+- 2024-12-25: Added Score submission with venue staff verification
 - 2024-12-25: Replaced Organization model with Venue model (location-based with geolocation support)
-- 2024-12-25: Added Sport model with customizable scoring types (stroke_play, match_play, points, wins_losses, sets, frames)
+- 2024-12-25: Added Sport model with customizable scoring types
 - 2024-12-25: Added Season model to track league seasons with registration deadlines
-- 2024-12-25: Implemented Registration model with approval modes (open, approval_required, invite_only)
-- 2024-12-25: Built RBAC with VenueMember, VenueRole (owner, admin, staff), and LeagueRole
-- 2024-12-25: Added geolocation search for venues using distance calculation (radius in miles)
-- 2024-12-25: Updated all tests to work with new Venue-based architecture (19 tests passing)
+- 2024-12-25: Implemented Registration model with approval modes
+- 2024-12-25: Built RBAC with VenueMember roles and LeagueRole
 
 ## Architecture
 
@@ -25,7 +27,7 @@ FastAPI backend for a two-sided marketplace platform connecting athletes with re
 ### Role-Based Access Control
 - **VenueMember**: User membership in a venue with role (owner, admin, staff)
 - **LeagueRole**: User role within a specific league (organizer, captain, participant)
-- Owner/Admin can create leagues, Staff can manage teams/games
+- Owner/Admin can create leagues, Staff can manage teams/games/scores
 
 ## Project Structure
 ```
@@ -50,6 +52,9 @@ app/
 │   ├── teams.py       # Team CRUD
 │   ├── players.py     # Player CRUD
 │   ├── games.py       # Game CRUD with score submissions
+│   ├── standings.py   # Standings calculation by sport type
+│   ├── predictions.py # Pick'em system with leaderboard
+│   ├── comments.py    # Comments and reactions on posts
 │   ├── posts.py       # Bulletin board / announcements
 │   └── users.py       # User management
 ├── db.py              # Database connection (SQLite/PostgreSQL)
@@ -61,36 +66,31 @@ alembic/               # Database migrations
 docs/
 ├── roadmap.md         # Development roadmap
 └── adr/               # Architecture Decision Records
-tests/                 # pytest test suite
+tests/                 # pytest test suite (19 tests)
 ```
 
 ## Key Endpoints
-- **Health**: `GET /health`
-- **Metrics**: `GET /metrics` (Prometheus format)
-- **Docs**: `GET /docs` (Swagger UI)
-- **Auth**:
-  - `POST /auth/register` - User registration
-  - `POST /auth/token` - Login
-  - `GET /users/me` - Current user info
-- **Venues** (require authentication):
-  - `GET /venues` - List venues with geolocation filter (lat, lng, radius_miles)
-  - `POST /venues` - Create venue (user becomes owner)
-  - `GET /venues/{id}` - Venue details
-  - `PATCH /venues/{id}` - Update venue
-- **Sports**:
-  - `GET /sports` - List sport definitions
-  - `POST /sports` - Create sport
-- **Leagues**:
-  - `GET /leagues` - List leagues (filterable by venue, sport)
-  - `POST /leagues` - Create league (requires venue admin)
-  - `PATCH /leagues/{id}` - Update league
-- **Seasons**:
-  - `GET /seasons` - List seasons
-  - `POST /seasons` - Create season for league
-- **Registrations**:
-  - `POST /registrations` - Register for a season
-  - `PATCH /registrations/{id}` - Approve/reject registration
-- **Teams/Players/Games/Posts**: Standard CRUD operations
+
+### Venues & Leagues
+- `GET /venues` - List venues with geolocation filter (lat, lng, radius_miles)
+- `POST /venues` - Create venue (user becomes owner)
+- `GET /leagues` - List leagues (filterable by venue, sport)
+- `POST /leagues` - Create league (requires venue admin)
+
+### Scores & Standings
+- `POST /games/{id}/scores` - Submit score (participants)
+- `POST /games/{id}/scores/{submission_id}/verify` - Verify score (venue staff)
+- `GET /standings/seasons/{season_id}` - Get calculated standings
+
+### Predictions/Pick'em
+- `POST /predictions` - Make prediction on scheduled game
+- `POST /predictions/games/{id}/resolve` - Resolve predictions (venue staff)
+- `GET /predictions/leaderboard/seasons/{season_id}` - Season leaderboard
+
+### Social Features
+- `POST /comments` - Add comment to post
+- `POST /comments/reactions` - Add/update reaction
+- `GET /comments/reactions/posts/{id}` - Get reaction counts
 
 ## Data Models
 
@@ -107,8 +107,8 @@ tests/                 # pytest test suite
 - `approval_required` - Requires venue admin approval
 - `invite_only` - Invitation by organizer only
 
-### Venue Types
-- `golf_course`, `bowling_alley`, `sports_complex`, `esports_arena`, `indoor_court`, `outdoor_field`, `virtual`, `other`
+### Reaction Types
+- `like`, `love`, `celebrate`, `insightful`, `curious`
 
 ## Environment Variables
 | Variable | Required | Default | Description |
@@ -119,17 +119,6 @@ tests/                 # pytest test suite
 | `ENVIRONMENT` | No | `dev` | `dev` or `production` |
 | `AI_INTEGRATIONS_ANTHROPIC_API_KEY` | Auto | - | Set by Replit AI Integrations |
 
-## Development Commands
-```bash
-make run          # Start development server (port 5000)
-make test         # Run test suite
-make test-cov     # Run tests with coverage
-make format       # Format code with ruff
-make lint         # Check code with ruff
-make migrate      # Run database migrations
-make help         # Show all commands
-```
-
 ## Testing
 ```bash
 pytest tests/ -v          # Run all 19 tests
@@ -137,9 +126,9 @@ pytest tests/test_auth.py # Auth tests only
 pytest tests/test_leagues.py # Venue/League tests
 ```
 
-## Security Features
-- JWT-based authentication with 7-day expiry
-- Strong password requirements (8+ chars, upper/lower/digit)
-- Rate limiting on auth and AI endpoints
-- Security headers (HSTS, X-Frame-Options, etc.)
-- Role-based access control for venues and leagues
+## Remaining Tasks
+- Golf: GHIN API integration for handicap sync
+- Online Games: Game engines for chess, checkers, connect 4, battleship
+- Payments: Stripe integration for registration fees
+- Notifications: Alerts for new leagues, deadlines, results
+- Frontend: Next.js + Tailwind with Polymarket-inspired design
