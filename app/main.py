@@ -16,9 +16,11 @@ from app.routers import (
     leagues,
     players,
     posts,
+    predictions,
     registrations,
     seasons,
     sports,
+    standings,
     teams,
     users,
     venues,
@@ -91,6 +93,8 @@ app.include_router(registrations.router)
 app.include_router(teams.router)
 app.include_router(players.router)
 app.include_router(games.router)
+app.include_router(standings.router)
+app.include_router(predictions.router)
 app.include_router(posts.router)
 app.include_router(ai.router)
 app.include_router(realtime.router)

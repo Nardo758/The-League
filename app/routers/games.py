@@ -1,11 +1,13 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, func, select
 
 from app.core.cache import cache_key, get_cached_list, invalidate_list_cache, set_cached_list
 from app.db import get_session
 from app.deps import get_current_user
-from app.models import Game, GameStatus, League, Season, User, VenueMember, VenueRole
-from app.schemas import GameCreate, GameRead, GameUpdate, PaginatedResponse, paginate
+from app.models import Game, GameStatus, League, Registration, RegistrationStatus, ScoreSubmission, Season, User, VenueMember, VenueRole
+from app.schemas import GameCreate, GameRead, GameUpdate, PaginatedResponse, ScoreSubmissionCreate, ScoreSubmissionRead, paginate
 from app.schemas import GameStatus as GameStatusSchema
 
 router = APIRouter(prefix="/games", tags=["games"])
@@ -147,3 +149,156 @@ def delete_game(
     session.delete(game)
     session.commit()
     invalidate_list_cache("games:")
+
+
+@router.post("/{game_id}/scores", response_model=ScoreSubmissionRead, status_code=status.HTTP_201_CREATED)
+def submit_score(
+    game_id: int,
+    payload: ScoreSubmissionCreate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    game = session.get(Game, game_id)
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    if payload.game_id != game_id:
+        raise HTTPException(status_code=400, detail="Game ID mismatch")
+
+    season = session.get(Season, game.season_id)
+    league = session.get(League, season.league_id)
+
+    is_venue_staff = session.exec(
+        select(VenueMember).where(
+            VenueMember.venue_id == league.venue_id,
+            VenueMember.user_id == current_user.id,
+            VenueMember.role.in_([VenueRole.owner, VenueRole.admin, VenueRole.staff])
+        )
+    ).first()
+
+    is_participant = session.exec(
+        select(Registration).where(
+            Registration.season_id == game.season_id,
+            Registration.user_id == current_user.id,
+            Registration.status == RegistrationStatus.approved
+        )
+    ).first()
+
+    is_game_player = (
+        game.home_player_id == current_user.id or 
+        game.away_player_id == current_user.id
+    )
+
+    if not (is_venue_staff or is_participant or is_game_player):
+        raise HTTPException(status_code=403, detail="Not authorized to submit scores for this game")
+
+    submission = ScoreSubmission(
+        game_id=game_id,
+        submitted_by=current_user.id,
+        home_score=payload.home_score,
+        away_score=payload.away_score,
+        details=payload.details
+    )
+    session.add(submission)
+    session.commit()
+    session.refresh(submission)
+
+    return submission
+
+
+@router.get("/{game_id}/scores", response_model=list[ScoreSubmissionRead])
+def list_score_submissions(
+    game_id: int,
+    session: Session = Depends(get_session)
+):
+    game = session.get(Game, game_id)
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    submissions = session.exec(
+        select(ScoreSubmission)
+        .where(ScoreSubmission.game_id == game_id)
+        .order_by(ScoreSubmission.created_at.desc())
+    ).all()
+
+    return [ScoreSubmissionRead.model_validate(s) for s in submissions]
+
+
+@router.post("/{game_id}/scores/{submission_id}/verify", response_model=ScoreSubmissionRead)
+def verify_score(
+    game_id: int,
+    submission_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    game = session.get(Game, game_id)
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    submission = session.get(ScoreSubmission, submission_id)
+    if not submission or submission.game_id != game_id:
+        raise HTTPException(status_code=404, detail="Score submission not found")
+
+    season = session.get(Season, game.season_id)
+    league = session.get(League, season.league_id)
+
+    member = session.exec(
+        select(VenueMember).where(
+            VenueMember.venue_id == league.venue_id,
+            VenueMember.user_id == current_user.id,
+            VenueMember.role.in_([VenueRole.owner, VenueRole.admin, VenueRole.staff])
+        )
+    ).first()
+    if not member:
+        raise HTTPException(status_code=403, detail="Only venue staff can verify scores")
+
+    submission.is_verified = True
+    submission.verified_by = current_user.id
+    submission.verified_at = datetime.utcnow()
+
+    game.home_score = submission.home_score
+    game.away_score = submission.away_score
+    game.status = GameStatus.final
+
+    session.add(submission)
+    session.add(game)
+    session.commit()
+    session.refresh(submission)
+
+    invalidate_list_cache("games:")
+    return submission
+
+
+@router.delete("/{game_id}/scores/{submission_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_score_submission(
+    game_id: int,
+    submission_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    game = session.get(Game, game_id)
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    submission = session.get(ScoreSubmission, submission_id)
+    if not submission or submission.game_id != game_id:
+        raise HTTPException(status_code=404, detail="Score submission not found")
+
+    if submission.is_verified:
+        raise HTTPException(status_code=400, detail="Cannot delete verified score submission")
+
+    if submission.submitted_by != current_user.id:
+        season = session.get(Season, game.season_id)
+        league = session.get(League, season.league_id)
+        member = session.exec(
+            select(VenueMember).where(
+                VenueMember.venue_id == league.venue_id,
+                VenueMember.user_id == current_user.id,
+                VenueMember.role.in_([VenueRole.owner, VenueRole.admin])
+            )
+        ).first()
+        if not member:
+            raise HTTPException(status_code=403, detail="Not authorized to delete this submission")
+
+    session.delete(submission)
+    session.commit()
