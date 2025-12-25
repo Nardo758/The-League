@@ -81,6 +81,7 @@ class OnlineGameStatus(str, Enum):
     in_progress = "in_progress"
     completed = "completed"
     abandoned = "abandoned"
+    cancelled = "cancelled"
 
 
 class TournamentFormat(str, Enum):
@@ -420,6 +421,7 @@ class OnlineGame(Timestamped, table=True):
     status: OnlineGameStatus = Field(default=OnlineGameStatus.waiting, index=True)
     player1_id: int = Field(foreign_key="user.id", index=True)
     player2_id: int | None = Field(default=None, foreign_key="user.id", index=True)
+    challenged_user_id: int | None = Field(default=None, foreign_key="user.id", index=True)
     current_turn: int | None = None
     winner_id: int | None = Field(default=None, foreign_key="user.id", index=True)
     board_state: str | None = None

@@ -109,7 +109,11 @@ tests/                 # pytest test suite (19 tests)
 - `GET /comments/reactions/posts/{id}` - Get reaction counts
 
 ### Online Games & Tournaments
-- `POST /online-games` - Create new game
+- `POST /online-games` - Create open game (anyone can join)
+- `POST /online-games/challenge` - Challenge a specific player
+- `GET /online-games/challenges` - List pending challenges
+- `POST /online-games/{id}/accept` - Accept a challenge
+- `POST /online-games/{id}/decline` - Decline a challenge
 - `POST /online-games/{id}/move` - Make a move
 - `POST /online-games/matchmaking/search` - Find opponent with ELO matching
 - `POST /tournaments` - Create tournament

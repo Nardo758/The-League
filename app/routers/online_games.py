@@ -84,6 +84,23 @@ class MatchmakingResponse(BaseModel):
     message: str
 
 
+class ChallengePlayerRequest(BaseModel):
+    opponent_id: int
+    game_type: OnlineGameType
+    is_ranked: bool = False
+    time_limit_seconds: int | None = None
+
+
+class ChallengeResponse(BaseModel):
+    id: int
+    game_type: str
+    challenger_id: int
+    challenged_id: int
+    is_ranked: bool
+    time_limit: int | None
+    created_at: str
+
+
 @router.post("", response_model=GameResponse)
 def create_game(
     payload: CreateGameRequest,
@@ -224,6 +241,9 @@ def join_game(
     if game.player1_id == current_user.id:
         raise HTTPException(status_code=400, detail="Cannot join your own game")
     
+    if game.challenged_user_id and game.challenged_user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="This game is a private challenge")
+    
     game.player2_id = current_user.id
     game.status = OnlineGameStatus.in_progress
     
@@ -242,6 +262,135 @@ def join_game(
         is_ranked=game.is_ranked,
         created_at=game.created_at.isoformat()
     )
+
+
+@router.post("/challenge", response_model=ChallengeResponse)
+def challenge_player(
+    payload: ChallengePlayerRequest,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    if payload.opponent_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot challenge yourself")
+    
+    opponent = session.get(User, payload.opponent_id)
+    if not opponent:
+        raise HTTPException(status_code=404, detail="Opponent not found")
+    
+    engine = get_engine(payload.game_type)
+    initial_state = engine.create_initial_state()
+    
+    game = OnlineGame(
+        game_type=payload.game_type,
+        status=OnlineGameStatus.waiting,
+        player1_id=current_user.id,
+        challenged_user_id=payload.opponent_id,
+        board_state=engine.serialize_state(initial_state),
+        current_turn=1,
+        is_ranked=payload.is_ranked,
+        time_limit_seconds=payload.time_limit_seconds,
+        player1_time_remaining=payload.time_limit_seconds,
+        player2_time_remaining=payload.time_limit_seconds
+    )
+    
+    session.add(game)
+    session.commit()
+    session.refresh(game)
+    
+    return ChallengeResponse(
+        id=game.id,
+        game_type=game.game_type.value,
+        challenger_id=game.player1_id,
+        challenged_id=game.challenged_user_id,
+        is_ranked=game.is_ranked,
+        time_limit=game.time_limit_seconds,
+        created_at=game.created_at.isoformat()
+    )
+
+
+@router.get("/challenges", response_model=list[ChallengeResponse])
+def list_challenges(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    stmt = select(OnlineGame).where(
+        OnlineGame.status == OnlineGameStatus.waiting,
+        OnlineGame.challenged_user_id == current_user.id
+    ).order_by(OnlineGame.created_at.desc())
+    
+    games = session.exec(stmt).all()
+    
+    return [
+        ChallengeResponse(
+            id=g.id,
+            game_type=g.game_type.value,
+            challenger_id=g.player1_id,
+            challenged_id=g.challenged_user_id,
+            is_ranked=g.is_ranked,
+            time_limit=g.time_limit_seconds,
+            created_at=g.created_at.isoformat()
+        )
+        for g in games
+    ]
+
+
+@router.post("/{game_id}/accept", response_model=GameResponse)
+def accept_challenge(
+    game_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    game = session.get(OnlineGame, game_id)
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    if game.challenged_user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="This challenge is not for you")
+    
+    if game.status != OnlineGameStatus.waiting:
+        raise HTTPException(status_code=400, detail="Challenge already responded to")
+    
+    game.player2_id = current_user.id
+    game.status = OnlineGameStatus.in_progress
+    
+    session.add(game)
+    session.commit()
+    session.refresh(game)
+    
+    return GameResponse(
+        id=game.id,
+        game_type=game.game_type.value,
+        status=game.status.value,
+        player1_id=game.player1_id,
+        player2_id=game.player2_id,
+        current_turn=game.current_turn,
+        winner_id=game.winner_id,
+        is_ranked=game.is_ranked,
+        created_at=game.created_at.isoformat()
+    )
+
+
+@router.post("/{game_id}/decline")
+def decline_challenge(
+    game_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    game = session.get(OnlineGame, game_id)
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    if game.challenged_user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="This challenge is not for you")
+    
+    if game.status != OnlineGameStatus.waiting:
+        raise HTTPException(status_code=400, detail="Challenge already responded to")
+    
+    game.status = OnlineGameStatus.cancelled
+    session.add(game)
+    session.commit()
+    
+    return {"message": "Challenge declined"}
 
 
 @router.get("/{game_id}", response_model=GameStateResponse)
