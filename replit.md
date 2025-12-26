@@ -12,7 +12,9 @@ I prefer simple language and detailed explanations. I want iterative development
 The frontend utilizes Next.js 16 with App Router, Tailwind CSS, and TypeScript, adhering to a Polymarket-inspired dark theme.
 - **Theme Colors**: Background: `#0d0d0d`, Card: `#1a1a1a`, Accent: `#00d4aa` (teal), Error: `#ef4444`, Success: `#22c55e`, Warning: `#f59e0b`.
 - **Key Pages**: Comprehensive Venue Detail, League Detail, Tournament Detail, and Player Profile pages with tabbed navigation, a unified Search page with sub-tabs (Leagues, Venues, Tournaments, Players), and a user-centric dashboard (`/my-leagues`) and Profile page.
-  - **Player Profile (`/players/[id]`)**: Cover photo with avatar, name/username/location, Level/XP/followers, sports played, bio, CTAs (Follow, Message, Share), Quick Stats bar (Leagues, Events, Win Rate, Streak), 5 tabs (Activity, Stats, Leagues, Achievements, About), per-sport statistics, activity feed, earned badges/milestones, and mutual connections.
+  - **Player Profile (`/players/[id]`)**: Cover photo with avatar, name/username/location, Level/XP/followers, sports played, bio, CTAs (Follow, Message, Share), Quick Stats bar (Leagues, Events, Win Rate, Streak), 5 tabs (Activity, Stats, Leagues, Achievements, About), per-sport statistics, activity feed, earned badges/milestones, mutual connections, and **Upcoming Games** section showing scheduled rounds with open spots and join requests.
+  - **League Detail (`/leagues/[id]`)**: Enhanced tabs including Schedule (All/Upcoming/Past filters, List/Calendar view toggle), Standings (movement indicators, season stats summary), Roster (search, mutual connections, verified badges), and Reviews (rating distribution chart, helpful voting).
+  - **My Leagues Dashboard (`/my-leagues`)**: Added **Friends Looking to Play** feed showing friends' open game invites with Request to Join functionality.
 - **Navigation**: Streamlined to Discover, Search, Play, My Leagues, plus a Profile dropdown.
 
 ### Technical Implementations
