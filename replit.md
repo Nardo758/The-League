@@ -162,9 +162,50 @@ pytest tests/test_auth.py # Auth tests only
 pytest tests/test_leagues.py # Venue/League tests
 ```
 
+## Frontend
+
+### Stack
+- Next.js 16 with App Router (Turbopack)
+- Tailwind CSS with Polymarket-inspired dark theme
+- TypeScript
+
+### Theme Colors
+- Background: `#0d0d0d`
+- Card: `#1a1a1a`
+- Accent: `#00d4aa` (teal)
+- Error: `#ef4444`
+- Success: `#22c55e`
+- Warning: `#f59e0b`
+
+### Frontend Structure
+```
+client/
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx        # Root layout with nav
+│   │   ├── page.tsx          # Home page
+│   │   ├── login/page.tsx    # Login form
+│   │   ├── register/page.tsx # Registration form
+│   │   ├── venues/page.tsx   # Venue discovery
+│   │   ├── leagues/page.tsx  # Leagues listing
+│   │   ├── games/            # Online games
+│   │   │   ├── page.tsx      # Games lobby
+│   │   │   └── [id]/page.tsx # Active game
+│   │   └── tournaments/page.tsx # Tournaments list
+│   └── lib/
+│       ├── api.ts            # API client with typed endpoints
+│       └── auth-context.tsx  # Auth state management
+├── tailwind.config.ts        # Theme configuration
+└── next.config.ts            # API rewrites, allowed origins
+```
+
+### Running Frontend
+```bash
+cd client && npm run dev -- -p 5000
+```
+
 ## Remaining Tasks
 - Golf: GHIN API integration for handicap sync
-- Frontend: Next.js + Tailwind with Polymarket-inspired design
 
 ## Completed Features
 - Online Games: Connect 4, Checkers, Battleship, Chess with full move validation
