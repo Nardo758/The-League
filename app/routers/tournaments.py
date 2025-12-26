@@ -58,7 +58,7 @@ class TournamentResponse(BaseModel):
     status: str
     max_participants: int
     participant_count: int
-    organizer_id: int
+    organizer_id: int | None
     current_round: int
     winner_id: int | None
     created_at: str
