@@ -1,16 +1,14 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { channels, ChannelDetail, ChannelFeedEntry } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 
-interface PageParams {
-  slug: string;
-}
-
-export default function ChannelPage({ params }: { params: Promise<PageParams> }) {
-  const resolvedParams = use(params);
+export default function ChannelPage() {
+  const params = useParams();
+  const slug = params.slug as string;
   const { user } = useAuth();
   const [channelData, setChannelData] = useState<ChannelDetail | null>(null);
   const [feedEntries, setFeedEntries] = useState<ChannelFeedEntry[]>([]);
@@ -20,11 +18,12 @@ export default function ChannelPage({ params }: { params: Promise<PageParams> })
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!slug) return;
     const fetchChannel = async () => {
       try {
         const [data, feed] = await Promise.all([
-          channels.get(resolvedParams.slug),
-          channels.getFeed(resolvedParams.slug)
+          channels.get(slug),
+          channels.getFeed(slug)
         ]);
         setChannelData(data);
         setFeedEntries(feed.items);
@@ -35,18 +34,18 @@ export default function ChannelPage({ params }: { params: Promise<PageParams> })
       }
     };
     fetchChannel();
-  }, [resolvedParams.slug]);
+  }, [slug]);
 
   const handleSubscribe = async () => {
-    if (!user || !channelData) return;
+    if (!user || !channelData || !slug) return;
     setSubscribing(true);
     try {
       if (channelData.channel.is_subscribed) {
-        await channels.unsubscribe(resolvedParams.slug);
+        await channels.unsubscribe(slug);
       } else {
-        await channels.subscribe(resolvedParams.slug);
+        await channels.subscribe(slug);
       }
-      const data = await channels.get(resolvedParams.slug);
+      const data = await channels.get(slug);
       setChannelData(data);
     } catch (err) {
       console.error('Subscription error:', err);

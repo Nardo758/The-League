@@ -144,11 +144,39 @@ def list_channels(
     channels = session.exec(query).all()
     total = session.exec(select(func.count(Channel.id)).where(Channel.is_active == True)).one()
     
+    now = datetime.utcnow()
+    next_14_days = now + timedelta(days=14)
+    
     items = []
     for channel in channels:
         sub_count = session.exec(
             select(func.count(ChannelSubscription.id))
             .where(ChannelSubscription.channel_id == channel.id)
+        ).one()
+        
+        live_count = session.exec(
+            select(func.count(Game.id))
+            .join(Season)
+            .join(League)
+            .where(League.sport_id == channel.sport_id)
+            .where(Game.status == GameStatus.in_progress)
+        ).one()
+        
+        upcoming_count = session.exec(
+            select(func.count(Game.id))
+            .join(Season)
+            .join(League)
+            .where(League.sport_id == channel.sport_id)
+            .where(Game.status == GameStatus.scheduled)
+            .where(Game.start_time >= now)
+            .where(Game.start_time <= next_14_days)
+        ).one()
+        
+        open_seasons_count = session.exec(
+            select(func.count(Season.id))
+            .join(League)
+            .where(League.sport_id == channel.sport_id)
+            .where(Season.registration_open == True)
         ).one()
         
         is_subscribed = False
@@ -171,6 +199,8 @@ def list_channels(
             primary_color=channel.primary_color,
             is_active=channel.is_active,
             subscriber_count=sub_count,
+            live_events_count=live_count,
+            upcoming_events_count=upcoming_count + open_seasons_count,
             is_subscribed=is_subscribed
         ))
     
