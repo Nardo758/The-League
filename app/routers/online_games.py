@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query
+from starlette import status as http_status
 from pydantic import BaseModel
 from sqlmodel import Session, func, select
 
 from app.db import get_session
-from app.deps import get_current_user
+from app.deps import get_current_user, get_current_user_optional
 from app.game_engines import (
     BattleshipEngine,
     CheckersEngine,
@@ -159,8 +160,14 @@ def list_games(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User | None = Depends(get_current_user_optional)
 ):
+    if my_games and not current_user:
+        raise HTTPException(
+            status_code=http_status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to view your games"
+        )
+    
     stmt = select(OnlineGame)
     count_stmt = select(func.count()).select_from(OnlineGame)
     
@@ -172,7 +179,7 @@ def list_games(
         stmt = stmt.where(OnlineGame.status == status)
         count_stmt = count_stmt.where(OnlineGame.status == status)
     
-    if my_games:
+    if my_games and current_user:
         stmt = stmt.where(
             (OnlineGame.player1_id == current_user.id) | 
             (OnlineGame.player2_id == current_user.id)
@@ -454,7 +461,7 @@ def get_game_state(
 def spectate_game(
     game_id: int,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User | None = Depends(get_current_user_optional)
 ):
     game = session.get(OnlineGame, game_id)
     if not game:

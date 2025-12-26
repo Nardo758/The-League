@@ -38,3 +38,27 @@ def get_current_user(
         raise credentials_exception
     return user
 
+
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/auth/token", auto_error=False)
+
+
+def get_current_user_optional(
+    token: str | None = Depends(oauth2_scheme_optional),
+    session: Session = Depends(get_session),
+) -> User | None:
+    if not token:
+        return None
+    try:
+        payload = decode_token(token)
+        subject = payload.get("sub")
+        if subject is None:
+            return None
+        user_id = int(subject)
+    except (JWTError, ValueError):
+        return None
+
+    user = session.exec(select(User).where(User.id == user_id)).first()
+    if not user or not user.is_active:
+        return None
+    return user
+

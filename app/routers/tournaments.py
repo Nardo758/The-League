@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from sqlmodel import Session, func, select
 
 from app.db import get_session
-from app.deps import get_current_user
+from app.deps import get_current_user, get_current_user_optional
 from app.game_engines import (
     BattleshipEngine,
     CheckersEngine,
@@ -125,7 +125,7 @@ def list_tournaments(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User | None = Depends(get_current_user_optional)
 ):
     stmt = select(Tournament)
     count_stmt = select(func.count()).select_from(Tournament)
@@ -175,7 +175,7 @@ def list_tournaments(
 def get_tournament(
     tournament_id: int,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User | None = Depends(get_current_user_optional)
 ):
     tournament = session.get(Tournament, tournament_id)
     if not tournament:

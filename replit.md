@@ -4,6 +4,8 @@
 FastAPI backend for a two-sided marketplace platform connecting athletes with recreational sports leagues. Venues (golf courses, bowling alleys, sports complexes, esports arenas) create and manage leagues for various sports. Supports league discovery via geolocation, participant registration, score posting, standings tracking, social features, and prediction/pick'em systems.
 
 ## Recent Changes
+- 2024-12-26: Made online games and tournaments endpoints publicly accessible for browsing (spectator mode)
+- 2024-12-26: Added optional user authentication dependency for public/mixed endpoints
 - 2024-12-25: Added Tournament bracket system with single elimination, bye handling, and match progression
 - 2024-12-25: Built Online Games engine (Connect 4, Checkers, Battleship, Chess) with move validation
 - 2024-12-25: Added Matchmaking system with ELO ratings and ranked games
