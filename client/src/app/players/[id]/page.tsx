@@ -114,6 +114,54 @@ const demoConnections = [
   { id: 3, name: 'Jennifer Moore', mutual: 5, sports: ['pickleball', 'bowling'] }
 ];
 
+const demoUpcomingGames = [
+  { 
+    id: 1, 
+    sport: 'golf', 
+    title: 'Monday Night League Round', 
+    venue: 'Desert Ridge Golf Club', 
+    date: 'Mon, Jan 6', 
+    time: '5:30 PM', 
+    type: 'league',
+    openSpots: 0,
+    participants: ['Alex Martinez', 'Mike Johnson', 'David Chen']
+  },
+  { 
+    id: 2, 
+    sport: 'golf', 
+    title: 'Casual Saturday Round', 
+    venue: 'Papago Golf Course', 
+    date: 'Sat, Jan 11', 
+    time: '8:00 AM', 
+    type: 'open',
+    openSpots: 2,
+    participants: ['Alex Martinez', 'Sarah Williams'],
+    note: 'Looking for 2 more players!'
+  },
+  { 
+    id: 3, 
+    sport: 'pickleball', 
+    title: 'Ladder Match', 
+    venue: 'Metro Pickleball Center', 
+    date: 'Sun, Jan 12', 
+    time: '2:00 PM', 
+    type: 'league',
+    openSpots: 0,
+    participants: ['Alex Martinez']
+  },
+  { 
+    id: 4, 
+    sport: 'bowling', 
+    title: 'Thursday Team Night', 
+    venue: 'Sunset Lanes', 
+    date: 'Thu, Jan 9', 
+    time: '7:00 PM', 
+    type: 'league',
+    openSpots: 0,
+    participants: ['Alex Martinez', 'Team Strike Force']
+  }
+];
+
 type TabType = 'activity' | 'stats' | 'leagues' | 'achievements' | 'about';
 
 export default function PlayerProfilePage() {
@@ -302,6 +350,53 @@ export default function PlayerProfilePage() {
         {activeTab === 'activity' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
+              {/* Upcoming Games Section */}
+              <div className="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-emerald-500" />
+                    Upcoming Games
+                  </h2>
+                  <span className="text-sm text-gray-500">{demoUpcomingGames.length} scheduled</span>
+                </div>
+                <div className="space-y-3">
+                  {demoUpcomingGames.map((game) => (
+                    <div key={game.id} className="bg-[#252525] rounded-lg p-4 border border-gray-700 hover:border-gray-600 transition-colors">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-3">
+                          <span className="text-2xl">{sportEmojis[game.sport]}</span>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="text-white font-medium">{game.title}</p>
+                              {game.type === 'open' && game.openSpots > 0 && (
+                                <span className="px-2 py-0.5 bg-emerald-600/20 text-emerald-400 text-xs rounded-full">
+                                  {game.openSpots} spots open
+                                </span>
+                              )}
+                              {game.type === 'league' && (
+                                <span className="px-2 py-0.5 bg-blue-600/20 text-blue-400 text-xs rounded-full">
+                                  League
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-400">{game.venue}</p>
+                            <p className="text-sm text-gray-500 mt-1">{game.date} at {game.time}</p>
+                            {game.note && (
+                              <p className="text-sm text-emerald-400 mt-2 italic">"{game.note}"</p>
+                            )}
+                          </div>
+                        </div>
+                        {game.openSpots > 0 && (
+                          <button className="px-3 py-1.5 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 transition-colors whitespace-nowrap">
+                            Request to Join
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <div className="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800">
                 <h2 className="text-lg font-semibold text-white mb-4">Recent Activity</h2>
                 <div className="space-y-4">

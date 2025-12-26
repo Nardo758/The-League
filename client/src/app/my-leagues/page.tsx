@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
-import { Trophy, Calendar, BarChart3, ChevronRight, Plus, Gamepad2, History, MapPin, Clock } from 'lucide-react';
+import { Trophy, Calendar, BarChart3, ChevronRight, Plus, Gamepad2, History, MapPin, Clock, Users, UserPlus } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface LeagueItem {
@@ -42,6 +42,57 @@ interface OnlineGame {
   player1_id: number;
   player2_id: number | null;
 }
+
+const sportEmojis: Record<string, string> = {
+  golf: '⛳',
+  pickleball: '🏓',
+  bowling: '🎳',
+  softball: '🥎',
+  tennis: '🎾',
+  soccer: '⚽',
+};
+
+const demoBuddiesPlaying = [
+  {
+    id: 1,
+    player: { id: 2, name: 'Sarah Williams', avatar: 'SW' },
+    sport: 'golf',
+    title: 'Casual Saturday Round',
+    venue: 'Desert Ridge Golf Club',
+    date: 'Sat, Jan 11',
+    time: '7:00 AM',
+    openSpots: 2,
+    totalSpots: 4,
+    participants: ['Sarah Williams', 'Mike Chen'],
+    note: 'Looking for 2 more to fill the foursome!'
+  },
+  {
+    id: 2,
+    player: { id: 3, name: 'Mike Johnson', avatar: 'MJ' },
+    sport: 'pickleball',
+    title: 'Open Play Session',
+    venue: 'Metro Pickleball Center',
+    date: 'Sun, Jan 12',
+    time: '3:00 PM',
+    openSpots: 3,
+    totalSpots: 4,
+    participants: ['Mike Johnson'],
+    note: 'All skill levels welcome!'
+  },
+  {
+    id: 3,
+    player: { id: 4, name: 'Jennifer Moore', avatar: 'JM' },
+    sport: 'bowling',
+    title: 'Friday Night Bowling',
+    venue: 'Sunset Lanes',
+    date: 'Fri, Jan 10',
+    time: '8:00 PM',
+    openSpots: 4,
+    totalSpots: 6,
+    participants: ['Jennifer Moore', 'Tom Davis'],
+    note: 'Cosmic bowling night!'
+  }
+];
 
 const tabs = [
   { id: 'active', label: 'Active Leagues', icon: Trophy },
@@ -226,6 +277,58 @@ export default function MyLeaguesPage() {
                           </div>
                           <ChevronRight className="w-5 h-5 text-gray-400" />
                         </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Buddies Playing Section */}
+                {demoBuddiesPlaying.length > 0 && (
+                  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                      <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                        <Users className="w-5 h-5 text-purple-500" />
+                        Friends Looking to Play
+                      </h2>
+                      <span className="text-sm text-gray-500">{demoBuddiesPlaying.length} open invites</span>
+                    </div>
+                    <div className="divide-y divide-gray-100">
+                      {demoBuddiesPlaying.map((game) => (
+                        <div key={game.id} className="p-4 hover:bg-gray-50 transition-colors">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-start gap-3">
+                              <span className="text-2xl">{sportEmojis[game.sport] || '🏆'}</span>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="font-medium text-gray-900">{game.title}</p>
+                                  <span className="px-2 py-0.5 bg-purple-100 text-purple-600 text-xs rounded-full">
+                                    {game.openSpots} spots open
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-600 mt-0.5">{game.venue}</p>
+                                <p className="text-sm text-gray-500">{game.date} at {game.time}</p>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <Link href={`/players/${game.player.id}`} className="flex items-center gap-1.5">
+                                    <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-xs font-medium text-blue-600">
+                                      {game.player.avatar}
+                                    </div>
+                                    <span className="text-sm text-blue-600 hover:underline">{game.player.name}</span>
+                                  </Link>
+                                  {game.participants.length > 1 && (
+                                      <span className="text-gray-400 text-xs">+{game.participants.length - 1} going</span>
+                                    )}
+                                </div>
+                                {game.note && (
+                                  <p className="text-sm text-gray-500 mt-2 italic">"{game.note}"</p>
+                                )}
+                              </div>
+                            </div>
+                            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap">
+                              <UserPlus className="w-4 h-4" />
+                              Request to Join
+                            </button>
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Search, MapPin, Users, Calendar, DollarSign, Filter, Trophy, Building2, Swords, UserCircle, ChevronRight } from 'lucide-react';
@@ -47,6 +47,14 @@ const sports = [
 ];
 
 export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center"><div className="text-gray-400">Loading...</div></div>}>
+      <SearchPageContent />
+    </Suspense>
+  );
+}
+
+function SearchPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'leagues');

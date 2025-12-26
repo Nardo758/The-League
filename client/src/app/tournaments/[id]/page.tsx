@@ -148,17 +148,17 @@ const demoTeams = [
 const demoBracket = {
   rounds: [
     { name: 'Quarterfinals', matches: [
-      { id: 1, seed1: 1, team1: '#1 Seed', score1: null, seed2: 8, team2: '#8 Seed', score2: null, winner: null },
-      { id: 2, seed1: 4, team1: '#4 Seed', score1: null, seed2: 5, team2: '#5 Seed', score2: null, winner: null },
-      { id: 3, seed1: 2, team1: '#2 Seed', score1: null, seed2: 7, team2: '#7 Seed', score2: null, winner: null },
-      { id: 4, seed1: 3, team1: '#3 Seed', score1: null, seed2: 6, team2: '#6 Seed', score2: null, winner: null }
+      { id: 1, seed1: 1, team1: '#1 Seed', score1: null as number | null, seed2: 8, team2: '#8 Seed', score2: null as number | null, winner: null },
+      { id: 2, seed1: 4, team1: '#4 Seed', score1: null as number | null, seed2: 5, team2: '#5 Seed', score2: null as number | null, winner: null },
+      { id: 3, seed1: 2, team1: '#2 Seed', score1: null as number | null, seed2: 7, team2: '#7 Seed', score2: null as number | null, winner: null },
+      { id: 4, seed1: 3, team1: '#3 Seed', score1: null as number | null, seed2: 6, team2: '#6 Seed', score2: null as number | null, winner: null }
     ]},
     { name: 'Semifinals', matches: [
-      { id: 5, team1: 'TBD', team2: 'TBD', winner: null },
-      { id: 6, team1: 'TBD', team2: 'TBD', winner: null }
+      { id: 5, team1: 'TBD', team2: 'TBD', score1: null as number | null, score2: null as number | null, winner: null },
+      { id: 6, team1: 'TBD', team2: 'TBD', score1: null as number | null, score2: null as number | null, winner: null }
     ]},
     { name: 'Final', matches: [
-      { id: 7, team1: 'TBD', team2: 'TBD', winner: null }
+      { id: 7, team1: 'TBD', team2: 'TBD', score1: null as number | null, score2: null as number | null, winner: null }
     ]}
   ]
 };
