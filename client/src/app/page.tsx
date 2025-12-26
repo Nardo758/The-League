@@ -418,39 +418,46 @@ export default function HomePage() {
               </div>
 
               {featuredEvents && featuredEvents.live.length > 0 && (
-                <div className="lg:w-80 flex-shrink-0">
+                <div className="lg:w-96 flex-shrink-0">
                   <div className="flex items-center gap-2 mb-4">
                     <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></span>
                     <h3 className="text-lg font-bold text-gray-900">Live Online Games</h3>
                     <span className="text-xs text-gray-500">({featuredEvents.total_live})</span>
                   </div>
-                  <div className="bg-white rounded-xl border-2 border-green-400 overflow-hidden">
-                    <div className="divide-y divide-gray-100">
-                      {featuredEvents.live.slice(0, 6).map(event => (
-                        <Link
-                          key={`${event.event_type}-${event.id}`}
-                          href={event.event_type === 'online_game' ? `/games/${event.id}` : `/channels/${event.sport_slug}`}
-                          className="flex items-center gap-3 p-3 hover:bg-green-50 transition-colors group"
-                        >
-                          <span className="text-2xl">{event.sport_emoji}</span>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-gray-900 text-sm truncate group-hover:text-green-600">
-                              {event.title}
-                            </div>
-                            {event.subtitle && (
-                              <div className="text-xs text-gray-500 truncate">{event.subtitle}</div>
-                            )}
+                  <div className="space-y-3">
+                    {featuredEvents.live.slice(0, 4).map(event => (
+                      <Link
+                        key={`${event.event_type}-${event.id}`}
+                        href={event.event_type === 'online_game' ? `/games/${event.id}` : `/channels/${event.sport_slug}`}
+                        className="block bg-white rounded-xl border-2 border-green-400 overflow-hidden hover:shadow-xl hover:border-green-500 transition-all duration-300 group"
+                      >
+                        <div className="p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-3xl">{event.sport_emoji}</span>
+                            <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">
+                              <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5 animate-pulse"></span>
+                              LIVE
+                            </span>
                           </div>
-                          <div className="flex items-center gap-1 text-green-600">
-                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-                            <Eye className="w-3.5 h-3.5" />
+                          <h3 className="font-bold text-gray-900 text-sm mb-1 group-hover:text-green-600 transition-colors">
+                            {event.title}
+                          </h3>
+                          {event.subtitle && (
+                            <p className="text-xs text-gray-500 mb-2">{event.subtitle}</p>
+                          )}
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-600">{event.sport_name}</span>
+                            <span className="flex items-center gap-1 text-green-600">
+                              <Eye className="w-3 h-3" />
+                              Watch
+                            </span>
                           </div>
-                        </Link>
-                      ))}
-                    </div>
+                        </div>
+                      </Link>
+                    ))}
                     <Link 
                       href="/channels/online-games"
-                      className="block p-3 bg-green-50 text-center text-green-700 font-semibold text-sm hover:bg-green-100 transition-colors"
+                      className="block p-3 bg-green-50 rounded-xl text-center text-green-700 font-semibold text-sm hover:bg-green-100 transition-colors border-2 border-green-200"
                     >
                       View All Live Games
                     </Link>
