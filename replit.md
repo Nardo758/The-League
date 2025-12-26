@@ -4,6 +4,9 @@
 FastAPI backend for a two-sided marketplace platform connecting athletes with recreational sports leagues. Venues (golf courses, bowling alleys, sports complexes, esports arenas) create and manage leagues for various sports. Supports league discovery via geolocation, participant registration, score posting, standings tracking, social features, and prediction/pick'em systems.
 
 ## Recent Changes
+- 2024-12-26: Added Sport Channels feature - dedicated broadcast-style pages for each sport (Golf, Pickleball, Bowling, Softball, Tennis, Soccer)
+- 2024-12-26: Created Channel, ChannelFeedEntry, and ChannelSubscription database models
+- 2024-12-26: Added channel router with list, detail, feed, and subscription endpoints
 - 2024-12-26: Made online games and tournaments endpoints publicly accessible for browsing (spectator mode)
 - 2024-12-26: Added optional user authentication dependency for public/mixed endpoints
 - 2024-12-25: Added Tournament bracket system with single elimination, bye handling, and match progression
@@ -67,7 +70,8 @@ app/
 │   ├── online_games.py # Online games with move validation
 │   ├── tournaments.py  # Tournament brackets and match progression
 │   ├── notifications.py # User notifications system
-│   └── payments.py    # Stripe checkout and webhooks
+│   ├── payments.py    # Stripe checkout and webhooks
+│   └── channels.py    # Sport channels with feed aggregation
 ├── game_engines/
 │   ├── base.py        # Abstract GameEngine base class
 │   ├── connect4.py    # Connect 4 logic
