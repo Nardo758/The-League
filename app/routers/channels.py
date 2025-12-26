@@ -114,7 +114,7 @@ class SubscriptionResponse(BaseModel):
     location_radius_miles: int | None
 
 
-def get_sport_category_for_channel(slug: str) -> SportCategory | None:
+def get_sport_category_for_channel(slug: str) -> SportCategory | list[SportCategory] | None:
     mapping = {
         "golf": SportCategory.golf,
         "pickleball": SportCategory.pickleball,
@@ -124,6 +124,7 @@ def get_sport_category_for_channel(slug: str) -> SportCategory | None:
         "soccer": SportCategory.soccer,
         "chess": SportCategory.chess,
         "checkers": SportCategory.checkers,
+        "online-games": [SportCategory.chess, SportCategory.checkers],
     }
     return mapping.get(slug)
 
