@@ -315,139 +315,46 @@ export default function HomePage() {
           </div>
         ) : (
           <>
-            {featuredEvents && featuredEvents.live.length > 0 && (
-              <div className="mb-10">
+            <div className="flex flex-col lg:flex-row gap-8 mb-10">
+              <div className="flex-1">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
-                    <h2 className="text-2xl font-bold text-gray-900">Live Now</h2>
-                  </div>
-                  <span className="text-sm text-gray-500">({featuredEvents.total_live} events)</span>
+                  <Trophy className="w-6 h-6 text-yellow-500" />
+                  <h2 className="text-2xl font-bold text-gray-900">Featured Leagues</h2>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {featuredEvents.live.slice(0, 8).map(event => (
-                    <Link
-                      key={`${event.event_type}-${event.id}`}
-                      href={event.event_type === 'online_game' ? `/games/${event.id}` : `/channels/${event.sport_slug}`}
-                      className="bg-white rounded-xl border-2 border-green-400 overflow-hidden hover:shadow-xl hover:border-green-500 transition-all duration-300 group"
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {mockLeagues.map(league => (
+                    <div 
+                      key={league.id}
+                      className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden hover:shadow-xl hover:border-blue-300 transition-all duration-300 cursor-pointer transform hover:-translate-y-1"
                     >
-                      <div className="p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-3xl">{event.sport_emoji}</span>
-                          <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">
-                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5 animate-pulse"></span>
-                            LIVE
-                          </span>
-                        </div>
-                        <h3 className="font-bold text-gray-900 text-sm mb-1 group-hover:text-green-600 transition-colors">
-                          {event.title}
-                        </h3>
-                        {event.subtitle && (
-                          <p className="text-xs text-gray-500 mb-2">{event.subtitle}</p>
-                        )}
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-600">{event.sport_name}</span>
-                          <span className="flex items-center gap-1 text-green-600">
-                            <Eye className="w-3 h-3" />
-                            Watch
-                          </span>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {featuredEvents && featuredEvents.upcoming.length > 0 && (
-              <div className="mb-10">
-                <div className="flex items-center gap-3 mb-6">
-                  <Calendar className="w-6 h-6 text-blue-600" />
-                  <h2 className="text-2xl font-bold text-gray-900">Upcoming Events</h2>
-                  <span className="text-sm text-gray-500">({featuredEvents.total_upcoming} events)</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {featuredEvents.upcoming.map(event => (
-                    <Link
-                      key={`${event.event_type}-${event.id}`}
-                      href={event.event_type === 'tournament' ? `/tournaments` : `/channels/${event.sport_slug}`}
-                      className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden hover:shadow-xl hover:border-blue-300 transition-all duration-300 group"
-                    >
-                      <div className="p-5">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-4xl">{event.sport_emoji}</span>
-                          <span className="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold uppercase">
-                            {event.event_type === 'tournament' ? 'Tournament' : 'Registration Open'}
-                          </span>
-                        </div>
-                        <h3 className="font-bold text-gray-900 text-lg mb-2 group-hover:text-blue-600 transition-colors">
-                          {event.title}
-                        </h3>
-                        {event.subtitle && (
-                          <p className="text-sm text-gray-500 mb-3">{event.subtitle}</p>
-                        )}
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">{event.sport_name}</span>
-                          {event.participants !== null && (
-                            <span className="flex items-center gap-1 text-blue-600">
-                              <Users className="w-4 h-4" />
-                              {event.participants} joined
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-end">
-                        <span className="text-blue-600 font-semibold text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
-                          View Details
-                          <ChevronRight className="w-4 h-4" />
-                        </span>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="mb-10">
-              <div className="flex items-center gap-3 mb-6">
-                <Trophy className="w-6 h-6 text-yellow-500" />
-                <h2 className="text-2xl font-bold text-gray-900">Featured Leagues</h2>
-                <span className="text-sm text-gray-500">(Demo Data)</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {mockLeagues.map(league => (
-                  <div 
-                    key={league.id}
-                    className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden hover:shadow-xl hover:border-blue-300 transition-all duration-300 cursor-pointer transform hover:-translate-y-1"
-                  >
-                    <div className="p-5 border-b border-gray-100">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-2xl">{league.emoji}</span>
-                            {league.status === 'live' && (
-                              <span className="inline-flex items-center px-2.5 py-1 bg-green-100 text-green-800 rounded-full">
-                                <span className="w-1.5 h-1.5 bg-green-600 rounded-full mr-1.5 animate-pulse"></span>
-                                <span className="text-xs font-bold uppercase tracking-wide">Live</span>
-                              </span>
-                            )}
-                            {league.status === 'upcoming' && (
-                              <span className="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold uppercase tracking-wide">
-                                Upcoming
-                              </span>
-                            )}
-                          </div>
-                          <h3 className="font-bold text-gray-900 text-base leading-tight mb-2">
-                            {league.title}
-                          </h3>
-                          <div className="flex items-center text-xs text-gray-600 gap-3">
-                            <div className="flex items-center gap-1">
-                              <MapPin className="w-3.5 h-3.5" />
-                              <span>{league.venue}</span>
+                      <div className="p-5 border-b border-gray-100">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-2xl">{league.emoji}</span>
+                              {league.status === 'live' && (
+                                <span className="inline-flex items-center px-2.5 py-1 bg-green-100 text-green-800 rounded-full">
+                                  <span className="w-1.5 h-1.5 bg-green-600 rounded-full mr-1.5 animate-pulse"></span>
+                                  <span className="text-xs font-bold uppercase tracking-wide">Live</span>
+                                </span>
+                              )}
+                              {league.status === 'upcoming' && (
+                                <span className="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold uppercase tracking-wide">
+                                  Upcoming
+                                </span>
+                              )}
+                            </div>
+                            <h3 className="font-bold text-gray-900 text-base leading-tight mb-2">
+                              {league.title}
+                            </h3>
+                            <div className="flex items-center text-xs text-gray-600 gap-3">
+                              <div className="flex items-center gap-1">
+                                <MapPin className="w-3.5 h-3.5" />
+                                <span>{league.venue}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
 
                       <div className="flex items-center justify-between text-xs">
                         <div className="flex items-center gap-4 text-gray-600">
@@ -507,8 +414,93 @@ export default function HomePage() {
                     </div>
                   </div>
                 ))}
+                </div>
               </div>
+
+              {featuredEvents && featuredEvents.live.length > 0 && (
+                <div className="lg:w-80 flex-shrink-0">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></span>
+                    <h3 className="text-lg font-bold text-gray-900">Live Online Games</h3>
+                    <span className="text-xs text-gray-500">({featuredEvents.total_live})</span>
+                  </div>
+                  <div className="bg-white rounded-xl border-2 border-green-400 overflow-hidden">
+                    <div className="divide-y divide-gray-100">
+                      {featuredEvents.live.slice(0, 6).map(event => (
+                        <Link
+                          key={`${event.event_type}-${event.id}`}
+                          href={event.event_type === 'online_game' ? `/games/${event.id}` : `/channels/${event.sport_slug}`}
+                          className="flex items-center gap-3 p-3 hover:bg-green-50 transition-colors group"
+                        >
+                          <span className="text-2xl">{event.sport_emoji}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-gray-900 text-sm truncate group-hover:text-green-600">
+                              {event.title}
+                            </div>
+                            {event.subtitle && (
+                              <div className="text-xs text-gray-500 truncate">{event.subtitle}</div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 text-green-600">
+                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                            <Eye className="w-3.5 h-3.5" />
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                    <Link 
+                      href="/channels/online-games"
+                      className="block p-3 bg-green-50 text-center text-green-700 font-semibold text-sm hover:bg-green-100 transition-colors"
+                    >
+                      View All Live Games
+                    </Link>
+                  </div>
+                </div>
+              )}
             </div>
+
+            {featuredEvents && featuredEvents.upcoming.length > 0 && (
+              <div className="mb-10">
+                <div className="flex items-center gap-3 mb-6">
+                  <Calendar className="w-6 h-6 text-blue-600" />
+                  <h2 className="text-2xl font-bold text-gray-900">Upcoming Events</h2>
+                  <span className="text-sm text-gray-500">({featuredEvents.total_upcoming} events)</span>
+                </div>
+                <div className="flex gap-4 overflow-x-auto pb-4">
+                  {featuredEvents.upcoming.map(event => (
+                    <Link
+                      key={`${event.event_type}-${event.id}`}
+                      href={event.event_type === 'tournament' ? `/tournaments` : `/channels/${event.sport_slug}`}
+                      className="flex-shrink-0 w-72 bg-white rounded-xl border-2 border-gray-200 overflow-hidden hover:shadow-xl hover:border-blue-300 transition-all duration-300 group"
+                    >
+                      <div className="p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-3xl">{event.sport_emoji}</span>
+                          <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold uppercase">
+                            {event.event_type === 'tournament' ? 'Tournament' : 'Open'}
+                          </span>
+                        </div>
+                        <h3 className="font-bold text-gray-900 text-base mb-1 group-hover:text-blue-600 transition-colors">
+                          {event.title}
+                        </h3>
+                        {event.subtitle && (
+                          <p className="text-sm text-gray-500 mb-2">{event.subtitle}</p>
+                        )}
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-600">{event.sport_name}</span>
+                          {event.participants !== null && (
+                            <span className="flex items-center gap-1 text-blue-600">
+                              <Users className="w-3 h-3" />
+                              {event.participants} joined
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {filteredEvents.length === 0 && mockLeagues.length === 0 && !loading && (
               <div className="text-center py-16">
