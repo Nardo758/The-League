@@ -35,6 +35,9 @@ The backend is built with FastAPI.
 - **Management**: Tools for venues to create, manage, and track leagues, seasons, and registrations. Score submission with staff verification.
 - **Player Experience**: Registration, personal dashboards (active leagues, schedule, stats), live game feeds, tournament participation, and social interaction.
 - **Payments**: Stripe integration for secure transactions.
+  - **Payment Success Page (`/payment/success`)**: Confirmation with animated checkmark, registration details, payment summary, What's Next steps (email check, calendar integration, directions), social sharing (Twitter, Facebook, copy link), quick actions.
+  - **Payment Cancel Page (`/payment/cancel`)**: Warning header, countdown timer for spot hold, retry payment functionality, registration details preserved, urgency messaging, alternative options.
+  - **Backend Endpoint**: `GET /payments/session/{session_id}` returns comprehensive session details including league, venue, season, user, and registration data with session status and expiration handling.
 
 ### System Design Choices
 - **API Design**: RESTful API with clear endpoints for CRUD operations and specific functionalities.

@@ -5,7 +5,7 @@ from sqlmodel import Session, select
 
 from app.db import get_session
 from app.deps import get_current_user
-from app.models import League, Registration, RegistrationStatus, Season, User
+from app.models import League, Registration, RegistrationStatus, Season, User, Venue
 from app.stripe_client import get_publishable_key, get_stripe_client
 
 router = APIRouter(prefix="/payments", tags=["payments"])
@@ -206,3 +206,126 @@ async def verify_payment(
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to verify payment: {str(e)}")
+
+
+class SessionDetailsResponse(BaseModel):
+    session_id: str
+    payment_status: str
+    status: str
+    amount_total: int | None = None
+    currency: str | None = None
+    customer_email: str | None = None
+    payment_intent: str | None = None
+    created_at: int | None = None
+    league: dict | None = None
+    season: dict | None = None
+    venue: dict | None = None
+    user: dict | None = None
+    registration: dict | None = None
+
+
+@router.get("/session/{session_id}")
+async def get_session_details(
+    session_id: str,
+    db_session: Session = Depends(get_session)
+):
+    """
+    Retrieve full session details for payment success/cancel pages.
+    This endpoint doesn't require authentication as users may not be logged in
+    when returning from Stripe checkout.
+    """
+    stripe = await get_stripe_client()
+
+    try:
+        checkout_session = stripe.checkout.Session.retrieve(session_id)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="Invalid or expired session")
+
+    metadata = checkout_session.metadata or {}
+    season_id = metadata.get("season_id")
+    user_id = metadata.get("user_id")
+    league_id = metadata.get("league_id")
+
+    session_status = checkout_session.status
+    is_expired = session_status == "expired"
+    is_paid = checkout_session.payment_status == "paid"
+    
+    if is_expired:
+        status = "expired"
+    elif is_paid:
+        status = "success"
+    else:
+        status = "pending"
+
+    response_data = {
+        "session_id": session_id,
+        "payment_status": checkout_session.payment_status,
+        "session_status": session_status,
+        "status": status,
+        "is_expired": is_expired,
+        "amount_total": checkout_session.amount_total,
+        "currency": checkout_session.currency,
+        "customer_email": checkout_session.customer_email,
+        "payment_intent": checkout_session.payment_intent,
+        "created_at": checkout_session.created,
+        "expires_at": getattr(checkout_session, 'expires_at', None),
+    }
+
+    if league_id:
+        league = db_session.get(League, int(league_id))
+        if league:
+            venue = db_session.get(Venue, league.venue_id) if league.venue_id else None
+            response_data["league"] = {
+                "id": league.id,
+                "name": league.name,
+                "description": league.description,
+                "registration_fee": league.registration_fee,
+                "sport_id": league.sport_id,
+            }
+            if venue:
+                response_data["venue"] = {
+                    "id": venue.id,
+                    "name": venue.name,
+                    "address": venue.address,
+                    "city": venue.city,
+                    "state": venue.state,
+                    "zip_code": venue.zip_code,
+                }
+
+    if season_id:
+        season = db_session.get(Season, int(season_id))
+        if season:
+            response_data["season"] = {
+                "id": season.id,
+                "name": season.name,
+                "start_date": str(season.start_date) if season.start_date else None,
+                "end_date": str(season.end_date) if season.end_date else None,
+            }
+
+    if user_id:
+        user = db_session.get(User, int(user_id))
+        if user:
+            response_data["user"] = {
+                "id": user.id,
+                "email": user.email,
+                "full_name": user.full_name,
+            }
+
+        if season_id:
+            registration = db_session.exec(
+                select(Registration).where(
+                    Registration.season_id == int(season_id),
+                    Registration.user_id == int(user_id)
+                )
+            ).first()
+            if registration:
+                response_data["registration"] = {
+                    "id": registration.id,
+                    "status": registration.status.value if registration.status else None,
+                    "payment_status": registration.payment_status,
+                    "payment_amount": registration.payment_amount,
+                    "payment_intent_id": registration.payment_intent_id,
+                    "created_at": str(registration.created_at) if registration.created_at else None,
+                }
+
+    return response_data
