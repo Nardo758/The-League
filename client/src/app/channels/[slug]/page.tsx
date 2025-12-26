@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { channels, ChannelDetail, ChannelFeedEntry } from '@/lib/api';
+import { channels, ChannelDetail, ChannelFeedEntry, ScheduleEvent, ResultItem, VenueInfo } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 
 export default function ChannelPage() {
@@ -12,6 +12,9 @@ export default function ChannelPage() {
   const { user } = useAuth();
   const [channelData, setChannelData] = useState<ChannelDetail | null>(null);
   const [feedEntries, setFeedEntries] = useState<ChannelFeedEntry[]>([]);
+  const [schedule, setSchedule] = useState<Record<string, ScheduleEvent[]>>({});
+  const [results, setResults] = useState<ResultItem[]>([]);
+  const [venues, setVenues] = useState<VenueInfo[]>([]);
   const [activeTab, setActiveTab] = useState<'live' | 'schedule' | 'results' | 'players' | 'venues' | 'community' | 'news'>('live');
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState(false);
@@ -21,12 +24,18 @@ export default function ChannelPage() {
     if (!slug) return;
     const fetchChannel = async () => {
       try {
-        const [data, feed] = await Promise.all([
+        const [data, feed, scheduleData, resultsData, venuesData] = await Promise.all([
           channels.get(slug),
-          channels.getFeed(slug)
+          channels.getFeed(slug),
+          channels.getSchedule(slug),
+          channels.getResults(slug),
+          channels.getVenues(slug)
         ]);
         setChannelData(data);
         setFeedEntries(feed.items);
+        setSchedule(scheduleData.days);
+        setResults(resultsData.items);
+        setVenues(venuesData.items);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load channel');
       } finally {
@@ -79,25 +88,19 @@ export default function ChannelPage() {
 
   const tabs = [
     { id: 'live', label: 'Live', icon: '🔴', badge: live_events.length },
-    { id: 'schedule', label: 'Schedule', icon: '📅', badge: null },
-    { id: 'results', label: 'Results', icon: '🏆', badge: null },
+    { id: 'schedule', label: 'Schedule', icon: '📅', badge: Object.values(schedule).flat().length || upcoming_events.length },
+    { id: 'results', label: 'Results', icon: '🏆', badge: results.length > 0 ? results.length : null },
     { id: 'players', label: 'Players', icon: '👤', badge: null },
-    { id: 'venues', label: 'Venues', icon: '🏟️', badge: stats.total_venues },
+    { id: 'venues', label: 'Venues', icon: '🏟️', badge: venues.length > 0 ? venues.length : stats.total_venues },
     { id: 'community', label: 'Community', icon: '💬', badge: null },
     { id: 'news', label: 'News', icon: '📰', badge: feedEntries.length > 0 ? feedEntries.length : null },
   ];
 
   const mockDiscussions = [
-    { id: 1, author: 'GolfPro2024', avatar: '👤', content: 'Anyone else playing in the weekend tournament? Looking for practice partners!', likes: 12, replies: 8, time: '15m ago', isHot: true },
-    { id: 2, author: 'SarahW', avatar: '👩', content: 'Just shot my personal best today! Thanks to everyone at Desert Ridge for the tips.', likes: 45, replies: 15, time: '1h ago', isHot: true },
-    { id: 3, author: 'MikeChen', avatar: '👨', content: 'Tips for playing in windy conditions? The forecast looks rough for Saturday.', likes: 8, replies: 22, time: '2h ago', isHot: false },
+    { id: 1, author: 'SportsFan2024', avatar: '👤', content: 'Anyone else playing in the weekend tournament? Looking for practice partners!', likes: 12, replies: 8, time: '15m ago', isHot: true },
+    { id: 2, author: 'SarahW', avatar: '👩', content: 'Just had my best game today! Thanks to everyone for the tips.', likes: 45, replies: 15, time: '1h ago', isHot: true },
+    { id: 3, author: 'MikeChen', avatar: '👨', content: 'What are your go-to strategies for improvement?', likes: 8, replies: 22, time: '2h ago', isHot: false },
     { id: 4, author: 'TeamEagle', avatar: '🦅', content: 'League standings are getting tight! Only 2 points separate the top 4 teams.', likes: 23, replies: 6, time: '3h ago', isHot: false },
-  ];
-
-  const mockNews = [
-    { id: 1, type: 'breaking', title: 'New Tournament Series Announced for Spring 2025', summary: '$10,000 prize pool across 4-event series', time: '2 hours ago' },
-    { id: 2, type: 'featured', title: 'TPC Scottsdale Joins Platform', summary: 'Championship venue now hosting weekly leagues', time: '1 day ago' },
-    { id: 3, type: 'update', title: 'Handicap System Update', summary: 'New GHIN integration for automatic posting', time: '3 days ago' },
   ];
 
   const mockLeaderboard = [
@@ -107,38 +110,16 @@ export default function ChannelPage() {
     { rank: 4, name: 'Tom Bradley', score: -5, through: 14, trend: 'up' },
   ];
 
-  const mockSchedule = [
-    { day: 'Today', events: [
-      { time: '5:30 PM', name: 'Monday Night League', venue: 'Desert Ridge', spots: '2/32', status: 'filling' },
-      { time: '6:00 PM', name: 'Twilight Scramble', venue: 'Papago', spots: '12/48', status: 'open' },
-    ]},
-    { day: 'Wednesday', events: [
-      { time: '3:00 PM', name: 'Senior League', venue: 'Dobson Ranch', spots: 'Full', status: 'full' },
-      { time: '5:00 PM', name: 'Wednesday Scramble', venue: 'Desert Ridge', spots: '8/48', status: 'open' },
-    ]},
-    { day: 'Saturday', events: [
-      { time: '8:00 AM', name: 'Weekend Tournament', venue: 'TPC Scottsdale', spots: '18/64', status: 'filling' },
-      { time: '1:00 PM', name: 'Afternoon Scramble', venue: 'Papago', spots: '24/48', status: 'open' },
-    ]},
-  ];
-
-  const mockResults = [
-    { id: 1, name: 'Holiday Classic Championship', winner: 'Mike Chen', score: 'Net 68 (-4)', date: 'Dec 22', venue: 'Desert Ridge', highlight: 'Eagle on 18 to win by 1 stroke' },
-    { id: 2, name: 'Tuesday Night League - Week 12', winner: 'Team Birdie', score: '15-3 Record', date: 'Dec 21', venue: 'Papago', highlight: 'Perfect season in flight B' },
-    { id: 3, name: 'Winter Invitational', winner: 'Sarah Williams', score: 'Gross 74', date: 'Dec 18', venue: 'TPC Scottsdale', highlight: 'Course record for women\'s division' },
-  ];
-
   const mockPlayers = [
     { id: 1, name: 'Sarah Williams', handicap: 8.2, rounds: 48, avgScore: 82, trend: 'improving' },
     { id: 2, name: 'Mike Chen', handicap: 5.1, rounds: 62, avgScore: 78, trend: 'improving' },
     { id: 3, name: 'James Rodriguez', handicap: 12.4, rounds: 35, avgScore: 88, trend: 'stable' },
   ];
 
-  const mockVenues = [
-    { id: 1, name: 'Desert Ridge Golf Club', rating: 4.8, leagues: 4, nextEvent: 'Tonight 5:30 PM' },
-    { id: 2, name: 'Papago Golf Course', rating: 4.6, leagues: 3, nextEvent: 'Tomorrow 6:00 PM' },
-    { id: 3, name: 'TPC Scottsdale', rating: 4.9, leagues: 2, nextEvent: 'Saturday 8:00 AM' },
-  ];
+  const scheduleKeys = Object.keys(schedule);
+  const hasRealSchedule = scheduleKeys.length > 0;
+  const hasRealResults = results.length > 0;
+  const hasRealVenues = venues.length > 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -317,44 +298,60 @@ export default function ChannelPage() {
                 <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                   <span>📅</span> Upcoming Events
                 </h2>
-                <div className="space-y-6">
-                  {mockSchedule.map((day) => (
-                    <div key={day.day} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                      <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-                        <h3 className="font-bold text-gray-900">{day.day}</h3>
-                      </div>
-                      <div className="divide-y divide-gray-100">
-                        {day.events.map((event, idx) => (
-                          <div key={idx} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
-                            <div className="flex items-center gap-4">
-                              <div className="text-center min-w-[60px]">
-                                <div className="text-sm font-bold text-gray-900">{event.time}</div>
+                {hasRealSchedule ? (
+                  <div className="space-y-6">
+                    {scheduleKeys.map((day) => (
+                      <div key={day} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                          <h3 className="font-bold text-gray-900">{day}</h3>
+                        </div>
+                        <div className="divide-y divide-gray-100">
+                          {schedule[day].map((event) => (
+                            <div key={`${event.event_type}-${event.id}`} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                              <div className="flex items-center gap-4">
+                                <div className="text-center min-w-[80px]">
+                                  <div className="text-sm font-bold text-gray-900">{event.time_label}</div>
+                                </div>
+                                <div>
+                                  <div className="font-semibold text-gray-900">{event.title}</div>
+                                  {event.venue_name && <div className="text-sm text-gray-500">{event.venue_name}</div>}
+                                </div>
                               </div>
-                              <div>
-                                <div className="font-semibold text-gray-900">{event.name}</div>
-                                <div className="text-sm text-gray-500">{event.venue}</div>
+                              <div className="flex items-center gap-3">
+                                {event.spots_status && (
+                                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                    {event.spots_status}
+                                  </span>
+                                )}
+                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                  event.status === 'registration_open' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+                                }`}>
+                                  {event.event_type === 'season' ? 'Register' : 'View'}
+                                </span>
                               </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                event.status === 'full' ? 'bg-red-100 text-red-700' :
-                                event.status === 'filling' ? 'bg-yellow-100 text-yellow-700' :
-                                'bg-green-100 text-green-700'
-                              }`}>
-                                {event.spots}
-                              </span>
-                              {event.status !== 'full' && (
-                                <button className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg font-medium hover:bg-green-700">
-                                  Register
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : upcoming_events.length > 0 ? (
+                  <div className="space-y-4">
+                    {upcoming_events.map((event) => (
+                      <div key={event.id} className="bg-white rounded-xl border border-gray-200 p-4">
+                        <h3 className="font-semibold text-gray-900">{event.title}</h3>
+                        {event.venue_name && <p className="text-sm text-gray-500">{event.venue_name}</p>}
+                        {event.starts_at && <p className="text-sm text-gray-400">{new Date(event.starts_at).toLocaleString()}</p>}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                    <span className="text-5xl mb-4 block">📅</span>
+                    <h3 className="text-xl font-medium text-gray-900 mb-2">No Upcoming Events</h3>
+                    <p className="text-gray-500">Check back soon for new events</p>
+                  </div>
+                )}
               </>
             )}
 
@@ -363,25 +360,35 @@ export default function ChannelPage() {
                 <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                   <span>🏆</span> Recent Results
                 </h2>
-                <div className="space-y-4">
-                  {mockResults.map((result) => (
-                    <div key={result.id} className="bg-white rounded-xl border border-gray-200 p-6">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h3 className="text-lg font-bold text-gray-900">{result.name}</h3>
-                          <div className="text-sm text-gray-500">{result.venue} • {result.date}</div>
+                {hasRealResults ? (
+                  <div className="space-y-4">
+                    {results.map((result) => (
+                      <div key={result.id} className="bg-white rounded-xl border border-gray-200 p-6">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h3 className="text-lg font-bold text-gray-900">{result.title}</h3>
+                            <div className="text-sm text-gray-500">{result.venue_name} • {result.date_label}</div>
+                          </div>
+                          <span className="text-3xl">🏆</span>
                         </div>
-                        <span className="text-3xl">🏆</span>
+                        {result.winner_name && (
+                          <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg p-4 mb-3">
+                            <div className="text-sm text-yellow-700 font-medium">Winner</div>
+                            <div className="text-xl font-bold text-gray-900">{result.winner_name}</div>
+                            {result.final_score && <div className="text-lg font-mono text-green-600">{result.final_score}</div>}
+                          </div>
+                        )}
+                        {result.highlight && <div className="text-sm text-gray-600 italic">"{result.highlight}"</div>}
                       </div>
-                      <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg p-4 mb-3">
-                        <div className="text-sm text-yellow-700 font-medium">Winner</div>
-                        <div className="text-xl font-bold text-gray-900">{result.winner}</div>
-                        <div className="text-lg font-mono text-green-600">{result.score}</div>
-                      </div>
-                      <div className="text-sm text-gray-600 italic">"{result.highlight}"</div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                    <span className="text-5xl mb-4 block">🏆</span>
+                    <h3 className="text-xl font-medium text-gray-900 mb-2">No Results Yet</h3>
+                    <p className="text-gray-500">Results will appear here after games are completed</p>
+                  </div>
+                )}
               </>
             )}
 
@@ -424,29 +431,42 @@ export default function ChannelPage() {
                 <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                   <span>🏟️</span> Venues
                 </h2>
-                <div className="space-y-4">
-                  {mockVenues.map((venue) => (
-                    <div key={venue.id} className="bg-white rounded-xl border border-gray-200 p-6">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="text-lg font-bold text-gray-900">{venue.name}</h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-yellow-500">★</span>
-                            <span className="font-medium">{venue.rating}</span>
-                            <span className="text-gray-400">•</span>
-                            <span className="text-gray-600">{venue.leagues} active leagues</span>
+                {hasRealVenues ? (
+                  <div className="space-y-4">
+                    {venues.map((venue) => (
+                      <div key={venue.id} className="bg-white rounded-xl border border-gray-200 p-6">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="text-lg font-bold text-gray-900">{venue.name}</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-yellow-500">★</span>
+                              <span className="font-medium">{venue.rating}</span>
+                              <span className="text-gray-400">•</span>
+                              <span className="text-gray-600">{venue.active_leagues} active league{venue.active_leagues !== 1 ? 's' : ''}</span>
+                            </div>
+                            {venue.city && venue.state && (
+                              <div className="text-sm text-gray-500 mt-1">{venue.city}, {venue.state}</div>
+                            )}
                           </div>
+                          <Link href="/venues" className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 text-sm">
+                            View Details
+                          </Link>
                         </div>
-                        <Link href="/venues" className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 text-sm">
-                          View Details
-                        </Link>
+                        {venue.next_event && (
+                          <div className="mt-3 pt-3 border-t border-gray-100 text-sm text-gray-600">
+                            <span className="font-medium">Next Event:</span> {venue.next_event}
+                          </div>
+                        )}
                       </div>
-                      <div className="mt-3 pt-3 border-t border-gray-100 text-sm text-gray-600">
-                        <span className="font-medium">Next Event:</span> {venue.nextEvent}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                    <span className="text-5xl mb-4 block">🏟️</span>
+                    <h3 className="text-xl font-medium text-gray-900 mb-2">No Venues Yet</h3>
+                    <p className="text-gray-500">Venues hosting this sport will appear here</p>
+                  </div>
+                )}
               </>
             )}
 
@@ -506,45 +526,35 @@ export default function ChannelPage() {
                 <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                   <span>📰</span> News & Updates
                 </h2>
-                <div className="space-y-4">
-                  {mockNews.map((item) => (
-                    <div key={item.id} className="bg-white rounded-xl border border-gray-200 p-5 hover:border-gray-300 transition-colors">
-                      <div className="flex items-start gap-3">
-                        <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${
-                          item.type === 'breaking' ? 'bg-red-100 text-red-700' :
-                          item.type === 'featured' ? 'bg-blue-100 text-blue-700' :
-                          'bg-gray-100 text-gray-600'
-                        }`}>
-                          {item.type}
-                        </span>
-                        <div className="flex-1">
-                          <h3 className="font-bold text-gray-900 mb-1">{item.title}</h3>
-                          <p className="text-gray-600 text-sm mb-2">{item.summary}</p>
-                          <span className="text-xs text-gray-400">{item.time}</span>
+                {feedEntries.length > 0 ? (
+                  <div className="space-y-4">
+                    {feedEntries.map((entry) => (
+                      <div key={entry.id} className="bg-white rounded-xl border border-gray-200 p-5 hover:border-gray-300 transition-colors">
+                        <div className="flex items-start gap-3">
+                          <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${
+                            entry.is_pinned ? 'bg-yellow-100 text-yellow-700' :
+                            entry.is_featured ? 'bg-blue-100 text-blue-700' :
+                            'bg-gray-100 text-gray-600'
+                          }`}>
+                            {entry.content_type.replace('_', ' ')}
+                          </span>
+                          <div className="flex-1">
+                            <h3 className="font-bold text-gray-900 mb-1">{entry.title}</h3>
+                            {entry.subtitle && <p className="text-gray-600 text-sm mb-2">{entry.subtitle}</p>}
+                            {entry.body && <p className="text-gray-500 text-sm">{entry.body}</p>}
+                            <span className="text-xs text-gray-400">{new Date(entry.created_at).toLocaleDateString()}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-
-                  {feedEntries.length > 0 && (
-                    <>
-                      <h3 className="text-lg font-bold text-gray-900 mt-8">Channel Feed</h3>
-                      {feedEntries.map((entry) => (
-                        <div key={entry.id} className="bg-white rounded-xl border border-gray-200 p-5">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full capitalize">
-                              {entry.content_type.replace('_', ' ')}
-                            </span>
-                            {entry.is_pinned && <span className="text-yellow-500 text-xs">📌 Pinned</span>}
-                          </div>
-                          <h4 className="font-bold text-gray-900">{entry.title}</h4>
-                          {entry.subtitle && <p className="text-gray-600 text-sm">{entry.subtitle}</p>}
-                          {entry.body && <p className="text-gray-500 text-sm mt-2">{entry.body}</p>}
-                        </div>
-                      ))}
-                    </>
-                  )}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                    <span className="text-5xl mb-4 block">📰</span>
+                    <h3 className="text-xl font-medium text-gray-900 mb-2">No News Yet</h3>
+                    <p className="text-gray-500">News and updates will appear here</p>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -580,44 +590,41 @@ export default function ChannelPage() {
                   <span>🏆</span> Champion - Summer Series 2024
                 </div>
                 <div className="flex items-center gap-2 text-gray-600">
-                  <span>⛳</span> 3 Hole-in-ones this season
+                  <span>⭐</span> Most Improved Player
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <span>🏌️</span> Featured Venue
-              </h3>
-              <div className="mb-3">
-                <h4 className="font-bold text-gray-900">Desert Ridge Golf Club</h4>
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <span className="text-yellow-500">★ 4.8</span>
-                  <span>•</span>
-                  <span>4 active leagues</span>
+            {hasRealVenues && venues[0] && (
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <span>{channel.emoji}</span> Featured Venue
+                </h3>
+                <div className="mb-3">
+                  <h4 className="font-bold text-gray-900">{venues[0].name}</h4>
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <span className="text-yellow-500">★ {venues[0].rating}</span>
+                    <span>•</span>
+                    <span>{venues[0].active_leagues} active league{venues[0].active_leagues !== 1 ? 's' : ''}</span>
+                  </div>
                 </div>
+                {venues[0].city && venues[0].state && (
+                  <p className="text-sm text-gray-600 mb-3">
+                    Located in {venues[0].city}, {venues[0].state}
+                  </p>
+                )}
+                <Link href="/venues" className="block w-full text-center py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 text-sm">
+                  View Venue
+                </Link>
               </div>
-              <p className="text-sm text-gray-600 mb-3">
-                Premier championship course in North Phoenix. Home to multiple weekly leagues.
-              </p>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {['Practice Range', 'Pro Shop', 'Restaurant'].map((amenity) => (
-                  <span key={amenity} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                    {amenity}
-                  </span>
-                ))}
-              </div>
-              <Link href="/venues" className="block w-full text-center py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 text-sm">
-                View Venue
-              </Link>
-            </div>
+            )}
 
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                 <span>🔥</span> Trending Topics
               </h3>
               <div className="space-y-3">
-                {['#WeekendTournament', '#DesertRidge', '#GolfTips', '#WinterSeries'].map((tag) => (
+                {['#WeekendTournament', '#LocalLeagues', '#GameDay', '#PlayerOfTheWeek'].map((tag) => (
                   <div key={tag} className="flex items-center justify-between">
                     <span className="text-blue-600 font-medium hover:underline cursor-pointer">{tag}</span>
                     <span className="text-xs text-gray-400">24 posts</span>
@@ -629,7 +636,7 @@ export default function ChannelPage() {
             <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-xl p-5 text-white">
               <h3 className="font-bold mb-2">Join the Community!</h3>
               <p className="text-sm text-green-100 mb-4">
-                Connect with local golfers, find leagues, and improve your game.
+                Connect with local players, find leagues, and improve your game.
               </p>
               <Link href="/register" className="block w-full text-center py-2 bg-white text-green-700 rounded-lg font-medium hover:bg-green-50 text-sm">
                 Sign Up Free

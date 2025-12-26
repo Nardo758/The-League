@@ -548,3 +548,274 @@ def get_subscription(
         notify_posts=sub.notify_posts,
         location_radius_miles=sub.location_radius_miles
     )
+
+
+class ScheduleEventResponse(BaseModel):
+    id: int
+    event_type: str
+    title: str
+    venue_name: str | None
+    starts_at: datetime | None
+    day_label: str
+    time_label: str
+    spots_status: str | None = None
+    status: str
+
+
+class ScheduleResponse(BaseModel):
+    days: dict[str, list[ScheduleEventResponse]]
+
+
+class ResultResponse(BaseModel):
+    id: int
+    event_type: str
+    title: str
+    venue_name: str | None
+    date_label: str
+    winner_name: str | None = None
+    final_score: str | None = None
+    highlight: str | None = None
+
+
+class ResultsListResponse(BaseModel):
+    items: list[ResultResponse]
+    total: int
+
+
+class VenueInfoResponse(BaseModel):
+    id: int
+    name: str
+    city: str | None
+    state: str | None
+    rating: float = 4.5
+    active_leagues: int
+    next_event: str | None = None
+
+
+class VenuesListResponse(BaseModel):
+    items: list[VenueInfoResponse]
+    total: int
+
+
+@router.get("/{slug}/schedule", response_model=ScheduleResponse)
+def get_channel_schedule(
+    slug: str,
+    session: Session = Depends(get_session),
+    days_ahead: int = Query(default=14, ge=1, le=30)
+):
+    channel = session.exec(select(Channel).where(Channel.slug == slug)).first()
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+    
+    sport = session.get(Sport, channel.sport_id)
+    if not sport:
+        raise HTTPException(status_code=404, detail="Sport not found")
+    
+    now = datetime.utcnow()
+    end_date = now + timedelta(days=days_ahead)
+    
+    upcoming_games = session.exec(
+        select(Game)
+        .join(Season)
+        .join(League)
+        .where(League.sport_id == sport.id)
+        .where(Game.status == GameStatus.scheduled)
+        .where(Game.start_time >= now)
+        .where(Game.start_time <= end_date)
+        .order_by(Game.start_time)
+        .limit(50)
+    ).all()
+    
+    days: dict[str, list[ScheduleEventResponse]] = {}
+    
+    for game in upcoming_games:
+        season = session.get(Season, game.season_id)
+        league = session.get(League, season.league_id) if season else None
+        venue = session.get(Venue, league.venue_id) if league else None
+        
+        if game.start_time:
+            day_label = game.start_time.strftime("%A, %b %d")
+            time_label = game.start_time.strftime("%I:%M %p")
+            if game.start_time.date() == now.date():
+                day_label = "Today"
+            elif game.start_time.date() == (now + timedelta(days=1)).date():
+                day_label = "Tomorrow"
+        else:
+            day_label = "TBD"
+            time_label = "TBD"
+        
+        event = ScheduleEventResponse(
+            id=game.id,
+            event_type="game",
+            title=f"{league.name} - Game" if league else f"Game #{game.id}",
+            venue_name=venue.name if venue else None,
+            starts_at=game.start_time,
+            day_label=day_label,
+            time_label=time_label,
+            spots_status=None,
+            status="scheduled"
+        )
+        
+        if day_label not in days:
+            days[day_label] = []
+        days[day_label].append(event)
+    
+    open_seasons = session.exec(
+        select(Season)
+        .join(League)
+        .where(League.sport_id == sport.id)
+        .where(Season.registration_open == True)
+        .limit(10)
+    ).all()
+    
+    for season in open_seasons:
+        league = session.get(League, season.league_id)
+        venue = session.get(Venue, league.venue_id) if league else None
+        
+        if season.start_date:
+            day_label = season.start_date.strftime("%A, %b %d")
+            time_label = "Registration Open"
+        else:
+            day_label = "Upcoming"
+            time_label = "Registration Open"
+        
+        event = ScheduleEventResponse(
+            id=season.id,
+            event_type="season",
+            title=f"{league.name} - {season.name}" if league else season.name,
+            venue_name=venue.name if venue else None,
+            starts_at=season.start_date,
+            day_label=day_label,
+            time_label=time_label,
+            spots_status="Open",
+            status="registration_open"
+        )
+        
+        if day_label not in days:
+            days[day_label] = []
+        days[day_label].append(event)
+    
+    return ScheduleResponse(days=days)
+
+
+@router.get("/{slug}/results", response_model=ResultsListResponse)
+def get_channel_results(
+    slug: str,
+    session: Session = Depends(get_session),
+    skip: int = 0,
+    limit: int = 10
+):
+    channel = session.exec(select(Channel).where(Channel.slug == slug)).first()
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+    
+    sport = session.get(Sport, channel.sport_id)
+    if not sport:
+        raise HTTPException(status_code=404, detail="Sport not found")
+    
+    completed_games = session.exec(
+        select(Game)
+        .join(Season)
+        .join(League)
+        .where(League.sport_id == sport.id)
+        .where(Game.status == GameStatus.final)
+        .order_by(col(Game.end_time).desc())
+        .offset(skip)
+        .limit(limit)
+    ).all()
+    
+    items = []
+    for game in completed_games:
+        season = session.get(Season, game.season_id)
+        league = session.get(League, season.league_id) if season else None
+        venue = session.get(Venue, league.venue_id) if league else None
+        
+        date_label = game.end_time.strftime("%b %d") if game.end_time else "Completed"
+        
+        items.append(ResultResponse(
+            id=game.id,
+            event_type="game",
+            title=f"{league.name} - Game" if league else f"Game #{game.id}",
+            venue_name=venue.name if venue else None,
+            date_label=date_label,
+            winner_name=None,
+            final_score=None,
+            highlight=None
+        ))
+    
+    total = session.exec(
+        select(func.count(Game.id))
+        .join(Season)
+        .join(League)
+        .where(League.sport_id == sport.id)
+        .where(Game.status == GameStatus.final)
+    ).one()
+    
+    return ResultsListResponse(items=items, total=total)
+
+
+@router.get("/{slug}/venues", response_model=VenuesListResponse)
+def get_channel_venues(
+    slug: str,
+    session: Session = Depends(get_session),
+    skip: int = 0,
+    limit: int = 10
+):
+    channel = session.exec(select(Channel).where(Channel.slug == slug)).first()
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+    
+    sport = session.get(Sport, channel.sport_id)
+    if not sport:
+        raise HTTPException(status_code=404, detail="Sport not found")
+    
+    venue_sports = session.exec(
+        select(VenueSport)
+        .where(VenueSport.sport_id == sport.id)
+        .offset(skip)
+        .limit(limit)
+    ).all()
+    
+    items = []
+    for vs in venue_sports:
+        venue = session.get(Venue, vs.venue_id)
+        if not venue:
+            continue
+        
+        league_count = session.exec(
+            select(func.count(League.id))
+            .where(League.venue_id == venue.id)
+            .where(League.sport_id == sport.id)
+        ).one()
+        
+        next_game = session.exec(
+            select(Game)
+            .join(Season)
+            .join(League)
+            .where(League.venue_id == venue.id)
+            .where(League.sport_id == sport.id)
+            .where(Game.status == GameStatus.scheduled)
+            .where(Game.start_time >= datetime.utcnow())
+            .order_by(Game.start_time)
+            .limit(1)
+        ).first()
+        
+        next_event = None
+        if next_game and next_game.start_time:
+            next_event = next_game.start_time.strftime("%a %I:%M %p")
+        
+        items.append(VenueInfoResponse(
+            id=venue.id,
+            name=venue.name,
+            city=venue.city,
+            state=venue.state,
+            rating=4.5,
+            active_leagues=league_count,
+            next_event=next_event
+        ))
+    
+    total = session.exec(
+        select(func.count(VenueSport.id)).where(VenueSport.sport_id == sport.id)
+    ).one()
+    
+    return VenuesListResponse(items=items, total=total)

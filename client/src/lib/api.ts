@@ -256,6 +256,43 @@ export interface ChannelFeedEntry {
   created_at: string;
 }
 
+export interface ScheduleEvent {
+  id: number;
+  event_type: string;
+  title: string;
+  venue_name: string | null;
+  starts_at: string | null;
+  day_label: string;
+  time_label: string;
+  spots_status: string | null;
+  status: string;
+}
+
+export interface ScheduleResponse {
+  days: Record<string, ScheduleEvent[]>;
+}
+
+export interface ResultItem {
+  id: number;
+  event_type: string;
+  title: string;
+  venue_name: string | null;
+  date_label: string;
+  winner_name: string | null;
+  final_score: string | null;
+  highlight: string | null;
+}
+
+export interface VenueInfo {
+  id: number;
+  name: string;
+  city: string | null;
+  state: string | null;
+  rating: number;
+  active_leagues: number;
+  next_event: string | null;
+}
+
 export const channels = {
   list: () => api.get<{ items: Channel[]; total: number }>('/channels'),
   get: (slug: string) => api.get<ChannelDetail>(`/channels/${slug}`),
@@ -269,6 +306,12 @@ export const channels = {
       `/channels/${slug}/feed${query ? `?${query}` : ''}`
     );
   },
+  getSchedule: (slug: string, daysAhead = 14) => 
+    api.get<ScheduleResponse>(`/channels/${slug}/schedule?days_ahead=${daysAhead}`),
+  getResults: (slug: string, skip = 0, limit = 10) => 
+    api.get<{ items: ResultItem[]; total: number }>(`/channels/${slug}/results?skip=${skip}&limit=${limit}`),
+  getVenues: (slug: string, skip = 0, limit = 10) => 
+    api.get<{ items: VenueInfo[]; total: number }>(`/channels/${slug}/venues?skip=${skip}&limit=${limit}`),
   subscribe: (slug: string, prefs?: {
     notify_live_events?: boolean;
     notify_upcoming?: boolean;
