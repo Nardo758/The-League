@@ -4,6 +4,8 @@
 FastAPI backend for a two-sided marketplace platform connecting athletes with recreational sports leagues. Venues (golf courses, bowling alleys, sports complexes, esports arenas) create and manage leagues for various sports. Supports league discovery via geolocation, participant registration, score posting, standings tracking, social features, and prediction/pick'em systems.
 
 ## Recent Changes
+- 2024-12-26: Landing page now displays real-time live events and upcoming tournaments from API, plus demo featured leagues
+- 2024-12-26: Added /channels/featured/events endpoint aggregating live online games and open tournaments
 - 2024-12-26: Added Online Games Arena channel with live games, lobby, tournaments, and leaderboard tabs
 - 2024-12-26: Added 🎮 Online Games icon to home page that links to /channels/online-games
 - 2024-12-26: Added VenueFollow and UserFollow models for following venues and players with notification preferences

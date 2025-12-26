@@ -29,6 +29,113 @@ interface FeaturedEventsResponse {
   total_upcoming: number;
 }
 
+const mockLeagues = [
+  {
+    id: 1,
+    title: "Phoenix Summer Golf Championship",
+    sport: "golf",
+    emoji: "🏌️",
+    venue: "Desert Ridge Golf Club",
+    status: "live",
+    participants: 142,
+    prizePool: "$5,000",
+    leaders: [
+      { name: "Mike Chen", chance: 28, score: "-8" },
+      { name: "Sarah Williams", chance: 22, score: "-7" }
+    ],
+    volume: "$42k",
+    trending: true,
+    distance: "4.2 mi"
+  },
+  {
+    id: 2,
+    title: "Metro Pickleball Ladder Finals",
+    sport: "pickleball",
+    emoji: "🏓",
+    venue: "Metro Pickleball Center",
+    status: "live",
+    participants: 64,
+    prizePool: "$2,500",
+    leaders: [
+      { name: "Martinez/Johnson", chance: 45, score: "12-8" },
+      { name: "Davis/Lee", chance: 35, score: "10-10" }
+    ],
+    volume: "$18k",
+    trending: true,
+    distance: "2.8 mi"
+  },
+  {
+    id: 3,
+    title: "Thursday Night Bowling League",
+    sport: "bowling",
+    emoji: "🎳",
+    venue: "Sunset Lanes",
+    status: "live",
+    participants: 96,
+    prizePool: "$3,200",
+    leaders: [
+      { name: "Strike Force", chance: 38, score: "14-2" },
+      { name: "Pin Crushers", chance: 31, score: "13-3" }
+    ],
+    volume: "$28k",
+    breaking: true,
+    distance: "5.1 mi"
+  },
+  {
+    id: 4,
+    title: "Citywide Softball Championship",
+    sport: "softball",
+    emoji: "⚾",
+    venue: "Westside Sports Complex",
+    status: "upcoming",
+    participants: 128,
+    prizePool: "$4,800",
+    leaders: [
+      { name: "Red Sox Elite", chance: 32, score: "15-3" },
+      { name: "Diamond Kings", chance: 28, score: "14-4" }
+    ],
+    volume: "$35k",
+    new: true,
+    startTime: "Tomorrow 6:00 PM",
+    distance: "3.5 mi"
+  },
+  {
+    id: 5,
+    title: "Weekend Tennis Doubles Ladder",
+    sport: "tennis",
+    emoji: "🎾",
+    venue: "Phoenix Tennis Center",
+    status: "live",
+    participants: 48,
+    prizePool: "$1,800",
+    leaders: [
+      { name: "Anderson/Brooks", chance: 42, score: "8-1" },
+      { name: "Garcia/Thompson", chance: 36, score: "7-2" }
+    ],
+    volume: "$15k",
+    trending: true,
+    distance: "6.1 mi"
+  },
+  {
+    id: 6,
+    title: "Indoor Soccer League Finals",
+    sport: "soccer",
+    emoji: "⚽",
+    venue: "Valley Sports Arena",
+    status: "upcoming",
+    participants: 88,
+    prizePool: "$6,000",
+    leaders: [
+      { name: "FC Phoenix", chance: 44, score: "12-2-1" },
+      { name: "United SC", chance: 39, score: "11-3-1" }
+    ],
+    volume: "$52k",
+    breaking: true,
+    startTime: "Dec 26, 7:00 PM",
+    distance: "8.3 mi"
+  }
+];
+
 const sports = [
   { id: 'all', name: 'All Sports', emoji: '🏆', color: 'bg-blue-50 text-blue-700 border-blue-200' },
   { id: 'golf', name: 'Golf', emoji: '🏌️', color: 'bg-green-50 text-green-700 border-green-200' },
@@ -301,7 +408,109 @@ export default function HomePage() {
               </div>
             )}
 
-            {filteredEvents.length === 0 && !loading && (
+            <div className="mb-10">
+              <div className="flex items-center gap-3 mb-6">
+                <Trophy className="w-6 h-6 text-yellow-500" />
+                <h2 className="text-2xl font-bold text-gray-900">Featured Leagues</h2>
+                <span className="text-sm text-gray-500">(Demo Data)</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {mockLeagues.map(league => (
+                  <div 
+                    key={league.id}
+                    className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden hover:shadow-xl hover:border-blue-300 transition-all duration-300 cursor-pointer transform hover:-translate-y-1"
+                  >
+                    <div className="p-5 border-b border-gray-100">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-2xl">{league.emoji}</span>
+                            {league.status === 'live' && (
+                              <span className="inline-flex items-center px-2.5 py-1 bg-green-100 text-green-800 rounded-full">
+                                <span className="w-1.5 h-1.5 bg-green-600 rounded-full mr-1.5 animate-pulse"></span>
+                                <span className="text-xs font-bold uppercase tracking-wide">Live</span>
+                              </span>
+                            )}
+                            {league.status === 'upcoming' && (
+                              <span className="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold uppercase tracking-wide">
+                                Upcoming
+                              </span>
+                            )}
+                          </div>
+                          <h3 className="font-bold text-gray-900 text-base leading-tight mb-2">
+                            {league.title}
+                          </h3>
+                          <div className="flex items-center text-xs text-gray-600 gap-3">
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-3.5 h-3.5" />
+                              <span>{league.venue}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-4 text-gray-600">
+                          <div className="flex items-center gap-1">
+                            <Users className="w-4 h-4" />
+                            <span className="font-medium">{league.participants}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <DollarSign className="w-4 h-4" />
+                            <span className="font-medium">{league.prizePool}</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-blue-600">
+                            <MapPin className="w-4 h-4" />
+                            <span className="font-medium">{league.distance}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-gray-50 space-y-2">
+                      {league.leaders.map((leader, idx) => (
+                        <div 
+                          key={idx}
+                          className="flex items-center justify-between p-3 rounded-lg bg-white border border-gray-200 hover:border-blue-300 transition-all"
+                        >
+                          <div className="flex-1">
+                            <div className="text-sm font-semibold text-gray-900">
+                              {leader.name}
+                            </div>
+                            {leader.score && (
+                              <div className="text-xs text-gray-600 mt-0.5 font-mono">
+                                {leader.score}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-end">
+                            <div className="text-2xl font-bold text-blue-600 font-mono">
+                              {leader.chance}%
+                            </div>
+                            <div className="text-xs text-gray-500 uppercase tracking-wide">
+                              chance
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="px-4 py-3 bg-white border-t border-gray-100 flex items-center justify-between">
+                      <div className="flex items-center gap-1 text-xs text-gray-600">
+                        <span className="font-semibold text-gray-900">{league.volume}</span>
+                        <span>Vol.</span>
+                      </div>
+                      <button className="text-blue-600 hover:text-blue-700 font-semibold text-xs uppercase tracking-wide flex items-center gap-1 transition-colors">
+                        <span>View Details</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {filteredEvents.length === 0 && mockLeagues.length === 0 && !loading && (
               <div className="text-center py-16">
                 <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Trophy className="w-10 h-10 text-gray-400" />
