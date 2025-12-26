@@ -8,7 +8,7 @@ from app.deps import get_current_user, get_current_user_optional
 from app.models import (
     Channel, ChannelFeedEntry, ChannelSubscription, ChannelContentType,
     Sport, SportCategory, User, League, Season, Game, GameStatus,
-    OnlineGame, OnlineGameStatus, Tournament, TournamentStatus,
+    OnlineGame, OnlineGameStatus, Tournament, TournamentStatus, TournamentParticipant,
     Post, Venue, VenueSport
 )
 
@@ -820,3 +820,186 @@ def get_channel_venues(
     ).one()
     
     return VenuesListResponse(items=items, total=total)
+
+
+class FeaturedEventResponse(BaseModel):
+    id: int
+    event_type: str
+    title: str
+    subtitle: str | None = None
+    sport_slug: str
+    sport_name: str
+    sport_emoji: str
+    venue_name: str | None = None
+    location: str | None = None
+    status: str
+    starts_at: datetime | None = None
+    participants: int | None = None
+    is_featured: bool = False
+
+
+class FeaturedEventsResponse(BaseModel):
+    live: list[FeaturedEventResponse]
+    upcoming: list[FeaturedEventResponse]
+    total_live: int
+    total_upcoming: int
+
+
+SPORT_EMOJIS = {
+    "golf": "🏌️",
+    "pickleball": "🏓",
+    "bowling": "🎳",
+    "softball": "⚾",
+    "tennis": "🎾",
+    "soccer": "⚽",
+    "chess": "♟️",
+    "checkers": "🏁",
+}
+
+
+@router.get("/featured/events", response_model=FeaturedEventsResponse)
+def get_featured_events(
+    session: Session = Depends(get_session),
+    limit: int = Query(6, ge=1, le=20),
+):
+    now = datetime.utcnow()
+    next_7_days = now + timedelta(days=7)
+    
+    live_events: list[FeaturedEventResponse] = []
+    upcoming_events: list[FeaturedEventResponse] = []
+    
+    live_games = session.exec(
+        select(OnlineGame)
+        .where(OnlineGame.status == OnlineGameStatus.in_progress)
+        .order_by(col(OnlineGame.created_at).desc())
+        .limit(limit)
+    ).all()
+    
+    for game in live_games:
+        game_type = game.game_type.value if hasattr(game.game_type, 'value') else str(game.game_type)
+        live_events.append(FeaturedEventResponse(
+            id=game.id,
+            event_type="online_game",
+            title=f"{game_type.replace('_', ' ').title()} Match",
+            subtitle=f"Player {game.player1_id} vs Player {game.player2_id}",
+            sport_slug="online-games",
+            sport_name=game_type.replace('_', ' ').title(),
+            sport_emoji=SPORT_EMOJIS.get(game_type, "🎮"),
+            status="live",
+            starts_at=game.created_at,
+            is_featured=game.is_ranked
+        ))
+    
+    live_league_games = session.exec(
+        select(Game)
+        .where(Game.status == GameStatus.in_progress)
+        .order_by(col(Game.start_time).desc())
+        .limit(limit)
+    ).all()
+    
+    for game in live_league_games:
+        season = session.get(Season, game.season_id)
+        if not season:
+            continue
+        league = session.get(League, season.league_id)
+        if not league:
+            continue
+        sport = session.get(Sport, league.sport_id)
+        venue = session.get(Venue, league.venue_id)
+        
+        sport_name = sport.name.lower() if sport else "sport"
+        live_events.append(FeaturedEventResponse(
+            id=game.id,
+            event_type="league_game",
+            title=league.name,
+            subtitle=f"Round {game.id % 10 + 1}",
+            sport_slug=sport_name,
+            sport_name=sport.name if sport else "Sport",
+            sport_emoji=SPORT_EMOJIS.get(sport_name, "🏆"),
+            venue_name=venue.name if venue else None,
+            location=f"{venue.city}, {venue.state}" if venue and venue.city else None,
+            status="live",
+            starts_at=game.start_time,
+        ))
+    
+    upcoming_games = session.exec(
+        select(Game)
+        .where(Game.status == GameStatus.scheduled)
+        .where(Game.start_time >= now)
+        .where(Game.start_time <= next_7_days)
+        .order_by(Game.start_time)
+        .limit(limit)
+    ).all()
+    
+    for game in upcoming_games:
+        season = session.get(Season, game.season_id)
+        if not season:
+            continue
+        league = session.get(League, season.league_id)
+        if not league:
+            continue
+        sport = session.get(Sport, league.sport_id)
+        venue = session.get(Venue, league.venue_id)
+        
+        sport_name = sport.name.lower() if sport else "sport"
+        upcoming_events.append(FeaturedEventResponse(
+            id=game.id,
+            event_type="league_game",
+            title=league.name,
+            subtitle=season.name,
+            sport_slug=sport_name,
+            sport_name=sport.name if sport else "Sport",
+            sport_emoji=SPORT_EMOJIS.get(sport_name, "🏆"),
+            venue_name=venue.name if venue else None,
+            location=f"{venue.city}, {venue.state}" if venue and venue.city else None,
+            status="upcoming",
+            starts_at=game.start_time,
+        ))
+    
+    open_tournaments = session.exec(
+        select(Tournament)
+        .where(Tournament.status == TournamentStatus.registration)
+        .order_by(col(Tournament.created_at).desc())
+        .limit(limit)
+    ).all()
+    
+    for tournament in open_tournaments:
+        game_type = tournament.game_type.value if hasattr(tournament.game_type, 'value') else str(tournament.game_type)
+        participant_count = session.exec(
+            select(func.count()).select_from(TournamentParticipant)
+            .where(TournamentParticipant.tournament_id == tournament.id)
+        ).one()
+        upcoming_events.append(FeaturedEventResponse(
+            id=tournament.id,
+            event_type="tournament",
+            title=tournament.name,
+            subtitle=f"{participant_count}/{tournament.max_participants} players",
+            sport_slug="online-games",
+            sport_name=game_type.replace('_', ' ').title(),
+            sport_emoji=SPORT_EMOJIS.get(game_type, "🎮"),
+            status="registration_open",
+            participants=participant_count,
+            is_featured=True
+        ))
+    
+    total_live = session.exec(
+        select(func.count(OnlineGame.id))
+        .where(OnlineGame.status == OnlineGameStatus.in_progress)
+    ).one() + session.exec(
+        select(func.count(Game.id))
+        .where(Game.status == GameStatus.in_progress)
+    ).one()
+    
+    total_upcoming = session.exec(
+        select(func.count(Game.id))
+        .where(Game.status == GameStatus.scheduled)
+        .where(Game.start_time >= now)
+        .where(Game.start_time <= next_7_days)
+    ).one()
+    
+    return FeaturedEventsResponse(
+        live=live_events[:limit],
+        upcoming=upcoming_events[:limit],
+        total_live=total_live,
+        total_upcoming=total_upcoming
+    )
