@@ -213,11 +213,11 @@ export default function HomePage() {
                 Find recreational sports leagues and tournaments near you. From golf to soccer, connect with your community and compete.
               </p>
               <div className="flex items-center gap-4">
-                <Link href="/leagues" className="px-6 py-3 bg-white text-blue-600 rounded-lg font-semibold hover:shadow-xl transition-all transform hover:-translate-y-1 flex items-center gap-2">
+                <Link href="/search?tab=leagues" className="px-6 py-3 bg-white text-blue-600 rounded-lg font-semibold hover:shadow-xl transition-all transform hover:-translate-y-1 flex items-center gap-2">
                   <span>Explore Leagues</span>
                   <ChevronRight className="w-5 h-5" />
                 </Link>
-                <Link href="/venue-admin" className="px-6 py-3 border-2 border-blue-400 text-white rounded-lg font-semibold hover:bg-blue-500 transition-all">
+                <Link href="/search?tab=venues" className="px-6 py-3 border-2 border-blue-400 text-white rounded-lg font-semibold hover:bg-blue-500 transition-all">
                   For Venues
                 </Link>
               </div>
