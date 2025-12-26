@@ -16,6 +16,7 @@ from app.routers import (
     comments,
     games,
     leagues,
+    locations,
     notifications,
     online_games,
     payments,
@@ -91,6 +92,7 @@ from app.routers import metrics, realtime
 
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(locations.router)
 app.include_router(venues.router)
 app.include_router(sports.router)
 app.include_router(leagues.router)

@@ -119,6 +119,44 @@ class UserUpdate(BaseModel):
     longitude: float | None = None
     city: str | None = Field(default=None, max_length=100)
     state: str | None = Field(default=None, max_length=100)
+    search_radius_miles: float | None = Field(default=None, ge=1, le=500)
+    auto_detect_location: bool | None = None
+    allow_global_search: bool | None = None
+    location_setup_complete: bool | None = None
+
+
+class UserLocationCreate(BaseModel):
+    label: str = Field(..., min_length=1, max_length=50)
+    city: str = Field(..., min_length=1, max_length=100)
+    state: str = Field(..., min_length=1, max_length=100)
+    latitude: float = Field(..., ge=-90, le=90)
+    longitude: float = Field(..., ge=-180, le=180)
+    radius_miles: float = Field(default=25.0, ge=1, le=500)
+    is_primary: bool = False
+
+
+class UserLocationUpdate(BaseModel):
+    label: str | None = Field(default=None, min_length=1, max_length=50)
+    city: str | None = Field(default=None, min_length=1, max_length=100)
+    state: str | None = Field(default=None, min_length=1, max_length=100)
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+    radius_miles: float | None = Field(default=None, ge=1, le=500)
+    is_primary: bool | None = None
+
+
+class UserLocationRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    label: str
+    city: str
+    state: str
+    latitude: float
+    longitude: float
+    radius_miles: float
+    is_primary: bool
+    created_at: datetime
 
 
 class UserRead(BaseModel):
@@ -132,6 +170,12 @@ class UserRead(BaseModel):
     avatar_url: str | None = None
     city: str | None = None
     state: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    search_radius_miles: float = 25.0
+    auto_detect_location: bool = True
+    allow_global_search: bool = False
+    location_setup_complete: bool = False
     created_at: datetime
 
 

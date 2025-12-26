@@ -31,7 +31,13 @@ The backend is built with FastAPI.
     - **Channels**: Dedicated broadcast-style pages for each sport, aggregating feed entries.
 
 ### Feature Specifications
-- **Discovery**: Geolocation-based venue and league search.
+- **Discovery**: Geolocation-based venue and league search with location-aware platform defaults.
+  - **Location-Aware Platform**: All content is filtered by user's location by default. No separate "local feed" - the entire platform respects location context.
+  - **User Location Model**: Users have `latitude`, `longitude`, `city`, `state`, `search_radius_miles` (default 25), `auto_detect_location`, `allow_global_search`, `location_setup_complete` fields.
+  - **Saved Locations**: `UserLocation` model stores multiple locations (Home, Work, etc.) with label, lat/lng, radius, and `is_primary` flag.
+  - **Location Bar**: Persistent header component showing current location and radius, with quick-switch dropdown to saved locations.
+  - **Location Settings**: `/settings/locations` page for managing saved locations with auto-detect, add/remove/set-primary functionality.
+  - **API Filtering**: Leagues and venues endpoints accept `latitude`, `longitude`, `radius_miles` query params for distance-based filtering using Haversine formula.
 - **Management**: Tools for venues to create, manage, and track leagues, seasons, and registrations. Score submission with staff verification.
 - **Player Experience**: Registration, personal dashboards (active leagues, schedule, stats), live game feeds, tournament participation, and social interaction.
 - **Payments**: Stripe integration for secure transactions.

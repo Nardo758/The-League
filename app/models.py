@@ -119,6 +119,10 @@ class UserBase(SQLModel):
     longitude: float | None = Field(default=None, index=True)
     city: str | None = Field(default=None, index=True)
     state: str | None = Field(default=None, index=True)
+    search_radius_miles: float = Field(default=25.0)
+    auto_detect_location: bool = Field(default=True)
+    allow_global_search: bool = Field(default=False)
+    location_setup_complete: bool = Field(default=False)
 
 
 class User(UserBase, Timestamped, table=True):
@@ -128,6 +132,23 @@ class User(UserBase, Timestamped, table=True):
     venue_memberships: list["VenueMember"] = Relationship(back_populates="user")
     registrations: list["Registration"] = Relationship(back_populates="user")
     posts: list["Post"] = Relationship(back_populates="author")
+    saved_locations: list["UserLocation"] = Relationship(back_populates="user")
+
+
+class UserLocation(Timestamped, table=True):
+    __tablename__ = "user_location"
+    
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    label: str = Field(max_length=50)
+    city: str = Field(max_length=100)
+    state: str = Field(max_length=100)
+    latitude: float
+    longitude: float
+    radius_miles: float = Field(default=25.0)
+    is_primary: bool = Field(default=False, index=True)
+    
+    user: User = Relationship(back_populates="saved_locations")
 
 
 class VenueBase(SQLModel):

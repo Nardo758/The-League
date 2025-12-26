@@ -88,7 +88,18 @@ export const api = new ApiClient();
 export interface User {
   id: number;
   email: string;
-  username: string;
+  username?: string;
+  full_name: string | null;
+  bio?: string | null;
+  avatar_url?: string | null;
+  city?: string | null;
+  state?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  search_radius_miles?: number;
+  auto_detect_location?: boolean;
+  allow_global_search?: boolean;
+  location_setup_complete?: boolean;
 }
 
 export interface AuthResponse {

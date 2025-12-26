@@ -6,6 +6,7 @@ from app.db import get_session
 from app.deps import get_current_user
 from app.models import League, Sport, User, Venue, VenueMember, VenueRole
 from app.schemas import LeagueCreate, LeagueRead, LeagueUpdate, PaginatedResponse, paginate
+from app.utils.geo import haversine_distance
 
 router = APIRouter(prefix="/leagues", tags=["leagues"])
 
@@ -15,14 +16,18 @@ def list_leagues(
     venue_id: int | None = None,
     sport_id: int | None = None,
     is_active: bool | None = None,
+    latitude: float | None = Query(None, description="User latitude for location search"),
+    longitude: float | None = Query(None, description="User longitude for location search"),
+    radius_miles: float = Query(50, ge=1, le=500, description="Search radius in miles"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     session: Session = Depends(get_session)
 ):
     cache_id = f"leagues:{cache_key(venue_id=venue_id, sport_id=sport_id, is_active=is_active, page=page, page_size=page_size)}"
-    cached = get_cached_list(cache_id)
-    if cached is not None:
-        return cached
+    if latitude is None and longitude is None:
+        cached = get_cached_list(cache_id)
+        if cached is not None:
+            return cached
 
     stmt = select(League)
     count_stmt = select(func.count()).select_from(League)
@@ -37,14 +42,29 @@ def list_leagues(
         stmt = stmt.where(League.is_active == is_active)
         count_stmt = count_stmt.where(League.is_active == is_active)
 
-    total = session.exec(count_stmt).one()
+    all_leagues = list(session.exec(stmt).all())
 
-    stmt = stmt.order_by(League.created_at.desc())
-    stmt = stmt.offset((page - 1) * page_size).limit(page_size)
+    if latitude is not None and longitude is not None:
+        filtered = []
+        for league in all_leagues:
+            venue = session.get(Venue, league.venue_id)
+            if venue and venue.latitude is not None and venue.longitude is not None:
+                dist = haversine_distance(latitude, longitude, venue.latitude, venue.longitude)
+                if dist <= radius_miles:
+                    filtered.append((league, dist))
+        filtered.sort(key=lambda x: x[1])
+        all_leagues = [item[0] for item in filtered]
 
-    items = [LeagueRead.model_validate(league) for league in session.exec(stmt).all()]
+    total = len(all_leagues)
+    start = (page - 1) * page_size
+    end = start + page_size
+    page_leagues = all_leagues[start:end]
+
+    items = [LeagueRead.model_validate(league) for league in page_leagues]
     result = paginate(items, total, page, page_size)
-    set_cached_list(cache_id, result)
+    
+    if latitude is None and longitude is None:
+        set_cached_list(cache_id, result)
     return result
 
 
