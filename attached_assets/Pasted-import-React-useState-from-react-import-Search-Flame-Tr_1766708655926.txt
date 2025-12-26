@@ -1,0 +1,430 @@
+import React, { useState } from 'react';
+import { Search, Flame, TrendingUp, Sparkles, Clock, Trophy, Users, DollarSign } from 'lucide-react';
+
+const LeaguePlatformLanding = () => {
+  const [activeTab, setActiveTab] = useState('trending');
+  const [selectedSport, setSelectedSport] = useState('all');
+
+  // Mock data for tournaments and leagues
+  const tournaments = [
+    {
+      id: 1,
+      title: "Phoenix Summer Golf Championship",
+      sport: "golf",
+      image: "🏌️",
+      status: "live",
+      participants: 142,
+      prizePool: "$5,000",
+      leaders: [
+        { name: "Mike Chen", chance: 28, score: "-8" },
+        { name: "Sarah Williams", chance: 22, score: "-7" }
+      ],
+      volume: "$42k",
+      trending: true
+    },
+    {
+      id: 2,
+      title: "Metro Pickleball Ladder Finals",
+      sport: "pickleball",
+      image: "🏓",
+      status: "live",
+      participants: 64,
+      prizePool: "$2,500",
+      leaders: [
+        { name: "Team Martinez/Johnson", chance: 45, score: "12-8" },
+        { name: "Team Davis/Lee", chance: 35, score: "10-10" }
+      ],
+      volume: "$18k",
+      trending: true
+    },
+    {
+      id: 3,
+      title: "Thursday Night Bowling League",
+      sport: "bowling",
+      image: "🎳",
+      status: "live",
+      participants: 96,
+      prizePool: "$3,200",
+      leaders: [
+        { name: "Strike Force", chance: 38, score: "14-2" },
+        { name: "Pin Crushers", chance: 31, score: "13-3" }
+      ],
+      volume: "$28k",
+      breaking: true
+    },
+    {
+      id: 4,
+      title: "Citywide Softball Championship",
+      sport: "softball",
+      image: "⚾",
+      status: "scheduled",
+      participants: 128,
+      prizePool: "$4,800",
+      leaders: [
+        { name: "Red Sox Elite", chance: 32, score: "15-3" },
+        { name: "Diamond Kings", chance: 28, score: "14-4" }
+      ],
+      volume: "$35k",
+      new: true,
+      startTime: "Tomorrow 6:00 PM"
+    },
+    {
+      id: 5,
+      title: "Weekend Tennis Doubles Ladder",
+      sport: "tennis",
+      image: "🎾",
+      status: "live",
+      participants: 48,
+      prizePool: "$1,800",
+      leaders: [
+        { name: "Anderson/Brooks", chance: 42, score: "8-1" },
+        { name: "Garcia/Thompson", chance: 36, score: "7-2" }
+      ],
+      volume: "$15k",
+      trending: true
+    },
+    {
+      id: 6,
+      title: "Indoor Soccer League Finals",
+      sport: "soccer",
+      image: "⚽",
+      status: "scheduled",
+      participants: 88,
+      prizePool: "$6,000",
+      leaders: [
+        { name: "FC Phoenix", chance: 44, score: "12-2-1" },
+        { name: "United SC", chance: 39, score: "11-3-1" }
+      ],
+      volume: "$52k",
+      breaking: true,
+      startTime: "Dec 26, 7:00 PM"
+    },
+    {
+      id: 7,
+      title: "Holiday Golf Scramble",
+      sport: "golf",
+      image: "🏌️",
+      status: "registering",
+      participants: 76,
+      prizePool: "$3,500",
+      leaders: [
+        { name: "Team Eagle", chance: 25, registrations: 24 },
+        { name: "Team Birdie", chance: 20, registrations: 18 }
+      ],
+      volume: "$22k",
+      new: true,
+      startTime: "Dec 28, 8:00 AM"
+    },
+    {
+      id: 8,
+      title: "Pickleball Round Robin Series",
+      sport: "pickleball",
+      image: "🏓",
+      status: "live",
+      participants: 56,
+      prizePool: "$2,000",
+      leaders: [
+        { name: "James Rodriguez", chance: 35, score: "8-2" },
+        { name: "Emily Chen", chance: 30, score: "7-3" }
+      ],
+      volume: "$12k",
+      trending: true
+    },
+    {
+      id: 9,
+      title: "Winter Bowling Tournament",
+      sport: "bowling",
+      image: "🎳",
+      status: "live",
+      participants: 112,
+      prizePool: "$5,500",
+      leaders: [
+        { name: "Perfect Game", chance: 41, score: "18-4" },
+        { name: "Spare Me", chance: 33, score: "16-6" }
+      ],
+      volume: "$45k",
+      breaking: true
+    },
+    {
+      id: 10,
+      title: "Co-Ed Softball Spring League",
+      sport: "softball",
+      image: "⚾",
+      status: "registering",
+      participants: 144,
+      prizePool: "$7,200",
+      leaders: [
+        { name: "Thunder Bats", chance: 29, registrations: 32 },
+        { name: "Home Run Heroes", chance: 24, registrations: 28 }
+      ],
+      volume: "$58k",
+      new: true,
+      startTime: "Jan 5, Registration Closes"
+    }
+  ];
+
+  const sports = [
+    { id: 'all', name: 'All Sports', icon: '🏆' },
+    { id: 'golf', name: 'Golf', icon: '🏌️' },
+    { id: 'pickleball', name: 'Pickleball', icon: '🏓' },
+    { id: 'bowling', name: 'Bowling', icon: '🎳' },
+    { id: 'softball', name: 'Softball', icon: '⚾' },
+    { id: 'tennis', name: 'Tennis', icon: '🎾' },
+    { id: 'soccer', name: 'Soccer', icon: '⚽' }
+  ];
+
+  const filteredTournaments = tournaments.filter(t => {
+    if (selectedSport !== 'all' && t.sport !== selectedSport) return false;
+    if (activeTab === 'trending' && !t.trending) return false;
+    if (activeTab === 'breaking' && !t.breaking) return false;
+    if (activeTab === 'new' && !t.new) return false;
+    return true;
+  });
+
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'live': return 'bg-red-500';
+      case 'scheduled': return 'bg-blue-500';
+      case 'registering': return 'bg-green-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch(status) {
+      case 'live': return 'Live';
+      case 'scheduled': return 'Upcoming';
+      case 'registering': return 'Open';
+      default: return status;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center space-x-8">
+              <div className="flex items-center space-x-2">
+                <Trophy className="w-8 h-8 text-blue-600" />
+                <span className="text-2xl font-bold text-gray-900">League Platform</span>
+              </div>
+              
+              {/* Search */}
+              <div className="hidden md:flex items-center bg-gray-100 rounded-lg px-4 py-2 w-96">
+                <Search className="w-5 h-5 text-gray-400 mr-2" />
+                <input 
+                  type="text" 
+                  placeholder="Search leagues, tournaments, sports..."
+                  className="bg-transparent outline-none text-sm w-full"
+                />
+                <span className="text-xs text-gray-400">/</span>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              <button className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
+                Browse
+              </button>
+              <button className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+                Join League
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Navigation Tabs */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center space-x-6 overflow-x-auto py-3">
+            <button
+              onClick={() => setActiveTab('trending')}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                activeTab === 'trending' 
+                  ? 'bg-blue-50 text-blue-600' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <TrendingUp className="w-4 h-4" />
+              <span>Trending</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('breaking')}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                activeTab === 'breaking' 
+                  ? 'bg-blue-50 text-blue-600' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <Flame className="w-4 h-4" />
+              <span>Breaking</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('new')}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                activeTab === 'new' 
+                  ? 'bg-blue-50 text-blue-600' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>New</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Sports Categories */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center space-x-4 overflow-x-auto py-4">
+            {sports.map(sport => (
+              <button
+                key={sport.id}
+                onClick={() => setSelectedSport(sport.id)}
+                className={`flex flex-col items-center space-y-1 px-4 py-2 rounded-lg min-w-[80px] transition-colors ${
+                  selectedSport === sport.id
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <span className="text-2xl">{sport.icon}</span>
+                <span className="text-xs font-medium whitespace-nowrap">{sport.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredTournaments.map(tournament => (
+            <div 
+              key={tournament.id}
+              className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+            >
+              {/* Tournament Header */}
+              <div className="p-4 border-b border-gray-100">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="text-4xl">{tournament.image}</div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 text-sm leading-tight">
+                        {tournament.title}
+                      </h3>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <span className={`${getStatusColor(tournament.status)} text-white text-xs px-2 py-0.5 rounded font-medium`}>
+                          {getStatusText(tournament.status)}
+                        </span>
+                        {tournament.startTime && (
+                          <span className="text-xs text-gray-500">
+                            {tournament.startTime}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-gray-600">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-1">
+                      <Users className="w-3 h-3" />
+                      <span>{tournament.participants}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <DollarSign className="w-3 h-3" />
+                      <span>{tournament.prizePool}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Leaders */}
+              <div className="p-4 space-y-2">
+                {tournament.leaders.map((leader, idx) => (
+                  <div 
+                    key={idx}
+                    className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-gray-900">
+                        {leader.name}
+                      </div>
+                      {leader.score && (
+                        <div className="text-xs text-gray-500 mt-0.5">
+                          {leader.score}
+                        </div>
+                      )}
+                      {leader.registrations && (
+                        <div className="text-xs text-gray-500 mt-0.5">
+                          {leader.registrations} registered
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-blue-600">
+                          {leader.chance}%
+                        </div>
+                        <div className="text-xs text-gray-400">chance</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Footer */}
+              <div className="px-4 pb-4 flex items-center justify-between text-xs text-gray-500">
+                <div className="flex items-center space-x-1">
+                  <span className="font-medium">{tournament.volume}</span>
+                  <span>Vol.</span>
+                </div>
+                <div className="text-blue-600 font-medium capitalize">
+                  {tournament.sport}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {filteredTournaments.length === 0 && (
+          <div className="text-center py-16">
+            <div className="text-gray-400 text-lg mb-2">No tournaments found</div>
+            <div className="text-gray-500 text-sm">Try selecting a different tab or sport</div>
+          </div>
+        )}
+      </main>
+
+      {/* Stats Bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 py-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center space-x-8">
+              <div>
+                <span className="text-gray-500">Active Leagues: </span>
+                <span className="font-semibold text-gray-900">847</span>
+              </div>
+              <div>
+                <span className="text-gray-500">Live Tournaments: </span>
+                <span className="font-semibold text-gray-900">23</span>
+              </div>
+              <div>
+                <span className="text-gray-500">Players Online: </span>
+                <span className="font-semibold text-green-600">12,482</span>
+              </div>
+            </div>
+            <div className="text-gray-400 text-xs">
+              League Platform © 2025
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LeaguePlatformLanding;
