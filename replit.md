@@ -1,259 +1,46 @@
 # The-League Backend
 
 ## Overview
-FastAPI backend for a two-sided marketplace platform connecting athletes with recreational sports leagues. Venues (golf courses, bowling alleys, sports complexes, esports arenas) create and manage leagues for various sports. Supports league discovery via geolocation, participant registration, score posting, standings tracking, social features, and prediction/pick'em systems.
+The-League is a FastAPI backend for a two-sided marketplace connecting athletes with recreational sports leagues. Venues can create and manage leagues, while participants can discover, register for, and track their progress in various sports. The platform includes features for score posting, standings, social interactions, predictions, and online games. The business vision is to become the leading platform for recreational sports, offering comprehensive tools for venues and an engaging experience for players, ultimately increasing sports participation and community engagement.
 
-## Recent Changes
-- 2024-12-26: Created comprehensive League Detail page (/leagues/[id]) with:
-  - Hero section with league name, venue, schedule, capacity, rating, price, urgency indicators
-  - Photo gallery placeholder
-  - Tabbed navigation: Overview, Schedule, Standings, Roster, Venue, Reviews
-  - Overview tab with About section, Quick Stats sidebar, Organizer info, Registration info, Past Seasons
-  - Schedule tab with weekly match cards and important dates
-  - Standings tab with flight-based standings table
-  - Roster tab with player list organized by flights
-  - Venue tab with venue details, amenities, and map placeholder
-  - Reviews tab with star ratings and player reviews
-  - Sticky bottom CTA that appears on scroll
-- 2024-12-26: Updated hero section with 3 CTAs: Explore Leagues, For Venues, and Organizer signup link
-- 2024-12-26: Enhanced /for-venues page with comprehensive B2B marketing sections:
-  - Hero with dashboard preview and trust indicators
-  - Problem section (Empty Capacity, Manual Chaos, Invisible to Players)
-  - Key Benefits with Fill Capacity, Automate Management, Maximize Revenue
-  - How It Works 4-step process
-  - Features Showcase with tabbed interface (Discovery, Management, Analytics)
-  - Sport-Specific Features tabs for Golf, Pickleball, Bowling, Softball, Tennis, Soccer
-  - Enhanced testimonials section with primary + 3 secondary cards
-  - Stats section (85% capacity increase, 20hrs saved, 40% retention)
-  - Updated pricing ($99/mo Starter, $199/mo Pro, Custom Enterprise)
-  - FAQ accordion with 10 questions
-  - Final CTA with contact info
-- 2024-12-26: Major navigation redesign - reduced from 7 tabs to 4: Discover, Search, Play, My Leagues + Profile dropdown
-- 2024-12-26: Created unified Search page (/search) with sub-tabs: Leagues, Venues, Tournaments, Players
-- 2024-12-26: Created My Leagues dashboard (/my-leagues) with Active Leagues, My Schedule, My Stats, History sections
-- 2024-12-26: Created Profile page (/profile) with Profile, Settings, Notifications, Privacy tabs
-- 2024-12-26: Created Play page (/play) with Quick Play game selection, Live Games feed, Open Tournaments
-- 2024-12-26: Added route redirects: /channels, /venues, /leagues, /tournaments, /news -> new locations
-- 2024-12-26: Added API endpoints: /users/me/leagues, /users/me/schedule, /users/me/stats for personal dashboard
-- 2024-12-26: Landing page now displays real-time live events and upcoming tournaments from API, plus demo featured leagues
-- 2024-12-26: Added /channels/featured/events endpoint aggregating live online games and open tournaments
-- 2024-12-26: Added Online Games Arena channel with live games, lobby, tournaments, and leaderboard tabs
-- 2024-12-26: Added 🎮 Online Games icon to home page that links to /channels/online-games
-- 2024-12-26: Added VenueFollow and UserFollow models for following venues and players with notification preferences
-- 2024-12-26: Created follow/unfollow endpoints for venues (POST/DELETE /venues/{id}/follow) and users (POST/DELETE /users/{id}/follow)
-- 2024-12-26: Added user profile endpoint with follower/following counts (/users/{id})
-- 2024-12-26: Added Sport Channels feature - dedicated broadcast-style pages for each sport (Golf, Pickleball, Bowling, Softball, Tennis, Soccer)
-- 2024-12-26: Created Channel, ChannelFeedEntry, and ChannelSubscription database models
-- 2024-12-26: Added channel router with list, detail, feed, and subscription endpoints
-- 2024-12-26: Made online games and tournaments endpoints publicly accessible for browsing (spectator mode)
-- 2024-12-26: Added optional user authentication dependency for public/mixed endpoints
-- 2024-12-25: Added Tournament bracket system with single elimination, bye handling, and match progression
-- 2024-12-25: Built Online Games engine (Connect 4, Checkers, Battleship, Chess) with move validation
-- 2024-12-25: Added Matchmaking system with ELO ratings and ranked games
-- 2024-12-25: Integrated Stripe payments with checkout sessions and webhooks
-- 2024-12-25: Added Notifications system with 11 notification types and batch operations
-- 2024-12-25: Added Comments and Reactions for social features (nested comments, multiple reaction types)
-- 2024-12-25: Added Predictions/Pick'em system with leaderboard
-- 2024-12-25: Added Standings calculation by sport scoring type (wins_losses, stroke_play, points)
-- 2024-12-25: Added Score submission with venue staff verification
-- 2024-12-25: Replaced Organization model with Venue model (location-based with geolocation support)
-- 2024-12-25: Added Sport model with customizable scoring types
-- 2024-12-25: Added Season model to track league seasons with registration deadlines
-- 2024-12-25: Implemented Registration model with approval modes
-- 2024-12-25: Built RBAC with VenueMember roles and LeagueRole
+## User Preferences
+I prefer simple language and detailed explanations. I want iterative development and will provide feedback at each stage. Ask before making major changes. Do not make changes to the `alembic/` folder or `tests/` folder.
 
-## Architecture
+## System Architecture
 
-### Venue-Centric Model
-- **Venue**: Physical/virtual location that hosts leagues (golf_course, bowling_alley, sports_complex, esports_arena, etc.)
-- **Sport**: Defines sport types with scoring systems (supports Golf, Pickleball, Softball, Bowling, Chess, etc.)
-- **VenueSport**: Links venues to sports they support
-- **League**: Competition organized by a venue for a specific sport
-- **Season**: Time-bounded period within a league with registration deadlines
-- **Registration**: Player enrollment in a season with approval workflow
+### UI/UX Decisions
+The frontend utilizes Next.js 16 with App Router, Tailwind CSS, and TypeScript, adhering to a Polymarket-inspired dark theme.
+- **Theme Colors**: Background: `#0d0d0d`, Card: `#1a1a1a`, Accent: `#00d4aa` (teal), Error: `#ef4444`, Success: `#22c55e`, Warning: `#f59e0b`.
+- **Key Pages**: Comprehensive Venue Detail and League Detail pages with tabbed navigation, a unified Search page with sub-tabs (Leagues, Venues, Tournaments, Players), and a user-centric dashboard (`/my-leagues`) and Profile page.
+- **Navigation**: Streamlined to Discover, Search, Play, My Leagues, plus a Profile dropdown.
 
-### Role-Based Access Control
-- **VenueMember**: User membership in a venue with role (owner, admin, staff)
-- **LeagueRole**: User role within a specific league (organizer, captain, participant)
-- Owner/Admin can create leagues, Staff can manage teams/games/scores
+### Technical Implementations
+The backend is built with FastAPI.
+- **Core Features**:
+    - **Venue-Centric Model**: Centralizes around `Venue` (physical/virtual locations), `Sport` (with customizable scoring), `League`, `Season`, and `Registration` (with approval workflows).
+    - **Role-Based Access Control (RBAC)**: Implemented with `VenueMember` roles (owner, admin, staff) and `LeagueRole` (organizer, captain, participant) to manage permissions.
+    - **Online Games Engine**: Supports Connect 4, Checkers, Battleship, and Chess with move validation and matchmaking based on ELO ratings.
+    - **Tournaments**: Single elimination bracket system with bye handling and match progression.
+    - **Scoring & Standings**: Dynamic calculation based on sport-specific scoring types (`stroke_play`, `match_play`, `points`, `wins_losses`, `sets`, `frames`).
+    - **Social Features**: Comments and reactions on posts, user/venue following with notifications.
+    - **Predictions/Pick'em System**: Allows users to make predictions with a leaderboard.
+    - **Notifications System**: Supports 11 types of user notifications.
+    - **Channels**: Dedicated broadcast-style pages for each sport, aggregating feed entries.
 
-## Project Structure
-```
-app/
-├── core/
-│   ├── config.py      # Application settings
-│   ├── ai_config.py   # AI-specific settings
-│   ├── cache.py       # TTL caching utilities
-│   ├── limiter.py     # Shared rate limiter
-│   └── logging.py     # Structured logging setup
-├── schemas.py         # Pydantic schemas with validation
-├── routers/
-│   ├── auth.py        # Authentication (register, login)
-│   ├── ai.py          # AI endpoints with rate limiting
-│   ├── realtime.py    # Realtime token generation
-│   ├── metrics.py     # Prometheus metrics
-│   ├── venues.py      # Venue CRUD with geolocation search
-│   ├── sports.py      # Sport definitions CRUD
-│   ├── seasons.py     # Season management
-│   ├── registrations.py # Player registration workflow
-│   ├── leagues.py     # League CRUD
-│   ├── teams.py       # Team CRUD
-│   ├── players.py     # Player CRUD
-│   ├── games.py       # Game CRUD with score submissions
-│   ├── standings.py   # Standings calculation by sport type
-│   ├── predictions.py # Pick'em system with leaderboard
-│   ├── comments.py    # Comments and reactions on posts
-│   ├── posts.py       # Bulletin board / announcements
-│   ├── users.py       # User management
-│   ├── online_games.py # Online games with move validation
-│   ├── tournaments.py  # Tournament brackets and match progression
-│   ├── notifications.py # User notifications system
-│   ├── payments.py    # Stripe checkout and webhooks
-│   └── channels.py    # Sport channels with feed aggregation
-├── game_engines/
-│   ├── base.py        # Abstract GameEngine base class
-│   ├── connect4.py    # Connect 4 logic
-│   ├── checkers.py    # Checkers with king promotion
-│   ├── battleship.py  # Battleship ship placement and attacks
-│   └── chess.py       # Chess move validation
-├── stripe_client.py   # Stripe API integration
-├── db.py              # Database connection (SQLite/PostgreSQL)
-├── deps.py            # FastAPI dependencies
-├── main.py            # Application entry point
-├── models.py          # SQLModel database models
-└── security.py        # Password hashing, JWT tokens
-alembic/               # Database migrations
-docs/
-├── roadmap.md         # Development roadmap
-└── adr/               # Architecture Decision Records
-tests/                 # pytest test suite (19 tests)
-```
+### Feature Specifications
+- **Discovery**: Geolocation-based venue and league search.
+- **Management**: Tools for venues to create, manage, and track leagues, seasons, and registrations. Score submission with staff verification.
+- **Player Experience**: Registration, personal dashboards (active leagues, schedule, stats), live game feeds, tournament participation, and social interaction.
+- **Payments**: Stripe integration for secure transactions.
 
-## Key Endpoints
+### System Design Choices
+- **API Design**: RESTful API with clear endpoints for CRUD operations and specific functionalities.
+- **Database**: SQLModel for ORM, supporting SQLite/PostgreSQL.
+- **Security**: JWT for authentication, password hashing.
+- **Scalability**: Rate limiting, caching utilities, structured logging.
+- **Modularity**: Codebase organized into `routers`, `game_engines`, `schemas`, and `models` for maintainability.
 
-### Venues & Leagues
-- `GET /venues` - List venues with geolocation filter (lat, lng, radius_miles)
-- `POST /venues` - Create venue (user becomes owner)
-- `GET /leagues` - List leagues (filterable by venue, sport)
-- `POST /leagues` - Create league (requires venue admin)
-
-### Scores & Standings
-- `POST /games/{id}/scores` - Submit score (participants)
-- `POST /games/{id}/scores/{submission_id}/verify` - Verify score (venue staff)
-- `GET /standings/seasons/{season_id}` - Get calculated standings
-
-### Predictions/Pick'em
-- `POST /predictions` - Make prediction on scheduled game
-- `POST /predictions/games/{id}/resolve` - Resolve predictions (venue staff)
-- `GET /predictions/leaderboard/seasons/{season_id}` - Season leaderboard
-
-### Social Features
-- `POST /comments` - Add comment to post
-- `POST /comments/reactions` - Add/update reaction
-- `GET /comments/reactions/posts/{id}` - Get reaction counts
-
-### Online Games & Tournaments
-- `POST /online-games` - Create open game (anyone can join)
-- `POST /online-games/challenge` - Challenge a specific player
-- `GET /online-games/challenges` - List pending challenges
-- `POST /online-games/{id}/accept` - Accept a challenge
-- `POST /online-games/{id}/decline` - Decline a challenge
-- `POST /online-games/{id}/move` - Make a move
-- `GET /online-games/{id}/spectate` - Watch a game (anyone can view)
-- `POST /online-games/matchmaking/search` - Find opponent with ELO matching
-- `POST /tournaments` - Create tournament
-- `POST /tournaments/{id}/register` - Join tournament
-- `POST /tournaments/{id}/start` - Generate bracket (organizer only)
-- `POST /tournaments/{id}/matches/{match_id}/report` - Report result
-
-### Payments & Notifications
-- `POST /payments/create-checkout` - Create Stripe checkout session
-- `POST /payments/webhook` - Handle Stripe webhooks
-- `GET /notifications` - List user notifications
-- `POST /notifications/{id}/read` - Mark notification as read
-
-## Data Models
-
-### Scoring Types
-- `stroke_play` - Lower is better (Golf)
-- `match_play` - Head-to-head points
-- `points` - Higher is better
-- `wins_losses` - Win/Loss record
-- `sets` - Set-based scoring (Tennis, Volleyball)
-- `frames` - Frame-based scoring (Bowling)
-
-### Registration Modes
-- `open` - Anyone can register
-- `approval_required` - Requires venue admin approval
-- `invite_only` - Invitation by organizer only
-
-### Reaction Types
-- `like`, `love`, `celebrate`, `insightful`, `curious`
-
-## Environment Variables
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `SECRET_KEY` | Yes (prod) | `CHANGE_ME_IN_PROD` | JWT signing key |
-| `DATABASE_URL` | No | `sqlite:///./league.db` | Database connection URL |
-| `CORS_ORIGINS` | No | `*` | Comma-separated allowed origins |
-| `ENVIRONMENT` | No | `dev` | `dev` or `production` |
-| `AI_INTEGRATIONS_ANTHROPIC_API_KEY` | Auto | - | Set by Replit AI Integrations |
-
-## Testing
-```bash
-pytest tests/ -v          # Run all 19 tests
-pytest tests/test_auth.py # Auth tests only
-pytest tests/test_leagues.py # Venue/League tests
-```
-
-## Frontend
-
-### Stack
-- Next.js 16 with App Router (Turbopack)
-- Tailwind CSS with Polymarket-inspired dark theme
-- TypeScript
-
-### Theme Colors
-- Background: `#0d0d0d`
-- Card: `#1a1a1a`
-- Accent: `#00d4aa` (teal)
-- Error: `#ef4444`
-- Success: `#22c55e`
-- Warning: `#f59e0b`
-
-### Frontend Structure
-```
-client/
-├── src/
-│   ├── app/
-│   │   ├── layout.tsx        # Root layout with nav
-│   │   ├── page.tsx          # Home page
-│   │   ├── login/page.tsx    # Login form
-│   │   ├── register/page.tsx # Registration form
-│   │   ├── venues/page.tsx   # Venue discovery
-│   │   ├── leagues/page.tsx  # Leagues listing
-│   │   ├── games/            # Online games
-│   │   │   ├── page.tsx      # Games lobby
-│   │   │   └── [id]/page.tsx # Active game
-│   │   └── tournaments/page.tsx # Tournaments list
-│   └── lib/
-│       ├── api.ts            # API client with typed endpoints
-│       └── auth-context.tsx  # Auth state management
-├── tailwind.config.ts        # Theme configuration
-└── next.config.ts            # API rewrites, allowed origins
-```
-
-### Running Frontend
-```bash
-cd client && npm run dev -- -p 5000
-```
-
-## Remaining Tasks
-- Golf: GHIN API integration for handicap sync
-
-## Completed Features
-- Online Games: Connect 4, Checkers, Battleship, Chess with full move validation
-- Payments: Stripe checkout sessions and webhook handling
-- Notifications: 11 notification types with unread tracking
-- Tournaments: Single elimination brackets with bye handling
-- Matchmaking: ELO-based ranking with preferred time limits
+## External Dependencies
+- **Stripe**: For payment processing (checkout sessions and webhooks).
+- **PostgreSQL / SQLite**: Database storage.
+- **Replit AI Integrations**: For `AI_INTEGRATIONS_ANTHROPIC_API_KEY`.
