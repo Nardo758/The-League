@@ -186,6 +186,98 @@ export const sports = {
   list: () => api.get<{ items: Sport[]; total: number }>('/sports'),
 };
 
+export interface Channel {
+  id: number;
+  sport_id: number;
+  slug: string;
+  title: string;
+  description: string | null;
+  emoji: string | null;
+  hero_image_url: string | null;
+  primary_color: string | null;
+  is_active: boolean;
+  subscriber_count: number;
+  live_events_count: number;
+  upcoming_events_count: number;
+  is_subscribed: boolean;
+}
+
+export interface ChannelStats {
+  subscriber_count: number;
+  live_events_count: number;
+  upcoming_events_count: number;
+  total_leagues: number;
+  total_venues: number;
+  recent_results_count: number;
+}
+
+export interface LiveEvent {
+  id: number;
+  event_type: string;
+  title: string;
+  subtitle: string | null;
+  status: string;
+  venue_name: string | null;
+  started_at: string | null;
+}
+
+export interface UpcomingEvent {
+  id: number;
+  event_type: string;
+  title: string;
+  venue_name: string | null;
+  location: string | null;
+  starts_at: string | null;
+  registration_open: boolean;
+  spots_available: number | null;
+}
+
+export interface ChannelDetail {
+  channel: Channel;
+  stats: ChannelStats;
+  live_events: LiveEvent[];
+  upcoming_events: UpcomingEvent[];
+}
+
+export interface ChannelFeedEntry {
+  id: number;
+  content_type: string;
+  title: string;
+  subtitle: string | null;
+  body: string | null;
+  image_url: string | null;
+  link_url: string | null;
+  reference_id: number | null;
+  reference_type: string | null;
+  priority: number;
+  is_pinned: boolean;
+  is_featured: boolean;
+  starts_at: string | null;
+  created_at: string;
+}
+
+export const channels = {
+  list: () => api.get<{ items: Channel[]; total: number }>('/channels'),
+  get: (slug: string) => api.get<ChannelDetail>(`/channels/${slug}`),
+  getFeed: (slug: string, params?: { content_type?: string; skip?: number; limit?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.content_type) searchParams.set('content_type', params.content_type);
+    if (params?.skip) searchParams.set('skip', params.skip.toString());
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    const query = searchParams.toString();
+    return api.get<{ items: ChannelFeedEntry[]; total: number }>(
+      `/channels/${slug}/feed${query ? `?${query}` : ''}`
+    );
+  },
+  subscribe: (slug: string, prefs?: {
+    notify_live_events?: boolean;
+    notify_upcoming?: boolean;
+    notify_results?: boolean;
+    notify_posts?: boolean;
+  }) => api.post(`/channels/${slug}/subscribe`, prefs || {}),
+  unsubscribe: (slug: string) => api.delete(`/channels/${slug}/subscribe`),
+};
+
 export const games = {
   list: (params?: { game_type?: string; status?: string; my_games?: boolean }) => {
     const searchParams = new URLSearchParams();

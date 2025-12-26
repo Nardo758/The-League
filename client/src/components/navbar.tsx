@@ -15,6 +15,9 @@ export function Navbar() {
               The League
             </Link>
             <div className="hidden md:flex items-center gap-6">
+              <Link href="/channels" className="text-sm text-muted hover:text-foreground transition-colors">
+                Channels
+              </Link>
               <Link href="/venues" className="text-sm text-muted hover:text-foreground transition-colors">
                 Venues
               </Link>
