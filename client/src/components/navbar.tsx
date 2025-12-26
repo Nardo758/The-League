@@ -52,7 +52,7 @@ export function Navbar() {
                 </Link>
                 <Link
                   href="/register"
-                  className="text-sm px-4 py-2 rounded-lg bg-accent text-background hover:bg-accent-hover transition-colors"
+                  className="text-sm px-4 py-2 rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors"
                 >
                   Sign Up
                 </Link>
