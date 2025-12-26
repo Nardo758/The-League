@@ -11,7 +11,8 @@ I prefer simple language and detailed explanations. I want iterative development
 ### UI/UX Decisions
 The frontend utilizes Next.js 16 with App Router, Tailwind CSS, and TypeScript, adhering to a Polymarket-inspired dark theme.
 - **Theme Colors**: Background: `#0d0d0d`, Card: `#1a1a1a`, Accent: `#00d4aa` (teal), Error: `#ef4444`, Success: `#22c55e`, Warning: `#f59e0b`.
-- **Key Pages**: Comprehensive Venue Detail, League Detail, and Tournament Detail pages with tabbed navigation, a unified Search page with sub-tabs (Leagues, Venues, Tournaments, Players), and a user-centric dashboard (`/my-leagues`) and Profile page.
+- **Key Pages**: Comprehensive Venue Detail, League Detail, Tournament Detail, and Player Profile pages with tabbed navigation, a unified Search page with sub-tabs (Leagues, Venues, Tournaments, Players), and a user-centric dashboard (`/my-leagues`) and Profile page.
+  - **Player Profile (`/players/[id]`)**: Cover photo with avatar, name/username/location, Level/XP/followers, sports played, bio, CTAs (Follow, Message, Share), Quick Stats bar (Leagues, Events, Win Rate, Streak), 5 tabs (Activity, Stats, Leagues, Achievements, About), per-sport statistics, activity feed, earned badges/milestones, and mutual connections.
 - **Navigation**: Streamlined to Discover, Search, Play, My Leagues, plus a Profile dropdown.
 
 ### Technical Implementations
