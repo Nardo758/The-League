@@ -212,13 +212,19 @@ export default function HomePage() {
               <p className="text-lg text-blue-100 mb-6 max-w-2xl">
                 Find recreational sports leagues and tournaments near you. From golf to soccer, connect with your community and compete.
               </p>
-              <div className="flex items-center gap-4">
-                <Link href="/search?tab=leagues" className="px-6 py-3 bg-white text-blue-600 rounded-lg font-semibold hover:shadow-xl transition-all transform hover:-translate-y-1 flex items-center gap-2">
-                  <span>Explore Leagues</span>
-                  <ChevronRight className="w-5 h-5" />
-                </Link>
-                <Link href="/search?tab=venues" className="px-6 py-3 border-2 border-blue-400 text-white rounded-lg font-semibold hover:bg-blue-500 transition-all">
-                  For Venues
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-4">
+                  <Link href="/search?tab=leagues" className="px-6 py-3 bg-white text-blue-600 rounded-lg font-semibold hover:shadow-xl transition-all transform hover:-translate-y-1 flex items-center gap-2">
+                    <span>Explore Leagues</span>
+                    <ChevronRight className="w-5 h-5" />
+                  </Link>
+                  <Link href="/for-venues" className="px-6 py-3 border-2 border-blue-400 text-white rounded-lg font-semibold hover:bg-blue-500 transition-all">
+                    For Venues
+                  </Link>
+                </div>
+                <Link href="/register?role=organizer" className="text-blue-200 hover:text-white text-sm font-medium transition-colors flex items-center gap-1">
+                  Organize a league? Sign up here
+                  <ChevronRight className="w-4 h-4" />
                 </Link>
               </div>
             </div>
