@@ -1,10 +1,12 @@
+from datetime import datetime
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, func, select
 
 from app.core.cache import cache_key, get_cached_list, invalidate_list_cache, set_cached_list
 from app.db import get_session
 from app.deps import get_current_user
-from app.models import User, Venue, VenueMember, VenueRole
+from app.models import User, Venue, VenueMember, VenueRole, VenueFollow
 from app.schemas import PaginatedResponse, VenueCreate, VenueRead, VenueUpdate, paginate
 
 router = APIRouter(prefix="/venues", tags=["venues"])
@@ -153,3 +155,116 @@ def delete_venue(
     session.delete(venue)
     session.commit()
     invalidate_list_cache("venues:")
+
+
+class VenueFollowCreate(BaseModel):
+    notify_new_leagues: bool = True
+    notify_events: bool = True
+    notify_announcements: bool = True
+
+
+class VenueFollowResponse(BaseModel):
+    id: int
+    venue_id: int
+    user_id: int
+    notify_new_leagues: bool
+    notify_events: bool
+    notify_announcements: bool
+    is_following: bool = True
+
+
+@router.post("/{venue_id}/follow", response_model=VenueFollowResponse)
+def follow_venue(
+    venue_id: int,
+    prefs: VenueFollowCreate = VenueFollowCreate(),
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    venue = session.get(Venue, venue_id)
+    if not venue:
+        raise HTTPException(status_code=404, detail="Venue not found")
+    
+    existing = session.exec(
+        select(VenueFollow)
+        .where(VenueFollow.venue_id == venue_id)
+        .where(VenueFollow.user_id == current_user.id)
+    ).first()
+    
+    if existing:
+        existing.notify_new_leagues = prefs.notify_new_leagues
+        existing.notify_events = prefs.notify_events
+        existing.notify_announcements = prefs.notify_announcements
+        existing.updated_at = datetime.utcnow()
+        session.add(existing)
+        session.commit()
+        session.refresh(existing)
+        return VenueFollowResponse(
+            id=existing.id,
+            venue_id=existing.venue_id,
+            user_id=existing.user_id,
+            notify_new_leagues=existing.notify_new_leagues,
+            notify_events=existing.notify_events,
+            notify_announcements=existing.notify_announcements
+        )
+    
+    new_follow = VenueFollow(
+        venue_id=venue_id,
+        user_id=current_user.id,
+        notify_new_leagues=prefs.notify_new_leagues,
+        notify_events=prefs.notify_events,
+        notify_announcements=prefs.notify_announcements
+    )
+    session.add(new_follow)
+    session.commit()
+    session.refresh(new_follow)
+    
+    return VenueFollowResponse(
+        id=new_follow.id,
+        venue_id=new_follow.venue_id,
+        user_id=new_follow.user_id,
+        notify_new_leagues=new_follow.notify_new_leagues,
+        notify_events=new_follow.notify_events,
+        notify_announcements=new_follow.notify_announcements
+    )
+
+
+@router.delete("/{venue_id}/follow")
+def unfollow_venue(
+    venue_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    venue = session.get(Venue, venue_id)
+    if not venue:
+        raise HTTPException(status_code=404, detail="Venue not found")
+    
+    follow = session.exec(
+        select(VenueFollow)
+        .where(VenueFollow.venue_id == venue_id)
+        .where(VenueFollow.user_id == current_user.id)
+    ).first()
+    
+    if not follow:
+        raise HTTPException(status_code=404, detail="Not following this venue")
+    
+    session.delete(follow)
+    session.commit()
+    
+    return {"message": "Unfollowed venue successfully"}
+
+
+@router.get("/{venue_id}/followers/count")
+def get_venue_follower_count(
+    venue_id: int,
+    session: Session = Depends(get_session)
+):
+    venue = session.get(Venue, venue_id)
+    if not venue:
+        raise HTTPException(status_code=404, detail="Venue not found")
+    
+    count = session.exec(
+        select(func.count(VenueFollow.id))
+        .where(VenueFollow.venue_id == venue_id)
+    ).one()
+    
+    return {"venue_id": venue_id, "follower_count": count}
