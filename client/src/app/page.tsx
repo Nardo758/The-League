@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Search, TrendingUp, Flame, Sparkles, Trophy, Users, MapPin, DollarSign, ChevronRight } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -135,6 +136,7 @@ const sports = [
 ];
 
 export default function HomePage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('all');
   const [selectedSport, setSelectedSport] = useState('all');
   const [liveGames, setLiveGames] = useState<OnlineGame[]>([]);
@@ -145,6 +147,14 @@ export default function HomePage() {
     setMounted(true);
     loadLiveData();
   }, []);
+
+  const handleSportClick = (sportId: string) => {
+    if (sportId === 'all') {
+      setSelectedSport('all');
+    } else {
+      router.push(`/channels/${sportId}`);
+    }
+  };
 
   const loadLiveData = async () => {
     try {
@@ -268,7 +278,7 @@ export default function HomePage() {
             {sports.map(sport => (
               <button
                 key={sport.id}
-                onClick={() => setSelectedSport(sport.id)}
+                onClick={() => handleSportClick(sport.id)}
                 className={`flex flex-col items-center gap-1.5 px-4 py-3 rounded-xl min-w-[90px] border-2 transition-all ${
                   selectedSport === sport.id
                     ? `${sport.color} shadow-md transform scale-105`
