@@ -330,9 +330,11 @@ class Post(PostBase, Timestamped, table=True):
     author_id: int = Field(foreign_key="user.id", index=True)
     venue_id: int | None = Field(default=None, foreign_key="venue.id", index=True)
     league_id: int | None = Field(default=None, foreign_key="league.id", index=True)
+    sport_id: int | None = Field(default=None, foreign_key="sport.id", index=True)
 
     author: User = Relationship(back_populates="posts")
     venue: Optional[Venue] = Relationship(back_populates="posts")
+    sport: Optional[Sport] = Relationship()
 
 
 class Prediction(Timestamped, table=True):
@@ -486,3 +488,69 @@ class TournamentMatch(Timestamped, table=True):
     online_game_id: int | None = Field(default=None, foreign_key="online_game.id", index=True)
     next_match_id: int | None = Field(default=None, foreign_key="tournament_match.id")
     is_bye: bool = Field(default=False)
+
+
+class ChannelContentType(str, Enum):
+    live_game = "live_game"
+    upcoming_event = "upcoming_event"
+    result = "result"
+    post = "post"
+    highlight = "highlight"
+    player_spotlight = "player_spotlight"
+    venue_feature = "venue_feature"
+    learning_resource = "learning_resource"
+    announcement = "announcement"
+
+
+class Channel(Timestamped, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    sport_id: int = Field(foreign_key="sport.id", index=True, unique=True)
+    slug: str = Field(index=True, unique=True)
+    title: str
+    description: str | None = None
+    emoji: str | None = None
+    hero_image_url: str | None = None
+    primary_color: str | None = None
+    is_active: bool = Field(default=True, index=True)
+
+    sport: Sport = Relationship()
+    feed_entries: list["ChannelFeedEntry"] = Relationship(back_populates="channel")
+    subscriptions: list["ChannelSubscription"] = Relationship(back_populates="channel")
+
+
+class ChannelFeedEntry(Timestamped, table=True):
+    __tablename__ = "channel_feed_entry"
+
+    id: int | None = Field(default=None, primary_key=True)
+    channel_id: int = Field(foreign_key="channel.id", index=True)
+    content_type: ChannelContentType = Field(index=True)
+    title: str
+    subtitle: str | None = None
+    body: str | None = None
+    image_url: str | None = None
+    link_url: str | None = None
+    reference_id: int | None = None
+    reference_type: str | None = None
+    priority: int = Field(default=0, index=True)
+    is_pinned: bool = Field(default=False, index=True)
+    is_featured: bool = Field(default=False)
+    starts_at: datetime | None = Field(default=None, index=True)
+    ends_at: datetime | None = None
+    visibility: str = Field(default="public")
+
+    channel: Channel = Relationship(back_populates="feed_entries")
+
+
+class ChannelSubscription(Timestamped, table=True):
+    __tablename__ = "channel_subscription"
+
+    id: int | None = Field(default=None, primary_key=True)
+    channel_id: int = Field(foreign_key="channel.id", index=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    notify_live_events: bool = Field(default=True)
+    notify_upcoming: bool = Field(default=True)
+    notify_results: bool = Field(default=True)
+    notify_posts: bool = Field(default=False)
+    location_radius_miles: int | None = None
+
+    channel: Channel = Relationship(back_populates="subscriptions")

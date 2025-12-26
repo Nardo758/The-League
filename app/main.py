@@ -12,6 +12,7 @@ from app.db import init_db
 from app.routers import (
     ai,
     auth,
+    channels,
     comments,
     games,
     leagues,
@@ -106,6 +107,7 @@ app.include_router(online_games.router)
 app.include_router(payments.router)
 app.include_router(posts.router)
 app.include_router(tournaments.router)
+app.include_router(channels.router)
 app.include_router(ai.router)
 app.include_router(realtime.router)
 app.include_router(metrics.router)
