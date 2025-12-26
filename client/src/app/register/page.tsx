@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth-context';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
+  const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -32,7 +32,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      await register(email, username, password);
+      await register(email, fullName, password);
       router.push('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');
@@ -69,17 +69,17 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label htmlFor="username" className="block text-sm font-medium mb-2">
-              Username
+            <label htmlFor="fullName" className="block text-sm font-medium mb-2">
+              Full Name
             </label>
             <input
-              id="username"
+              id="fullName"
               type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
               required
               className="w-full px-4 py-3 rounded-lg bg-background border border-border focus:border-accent focus:outline-none transition-colors"
-              placeholder="johndoe"
+              placeholder="John Doe"
             />
           </div>
 

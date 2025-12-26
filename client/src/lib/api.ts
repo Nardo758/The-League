@@ -134,11 +134,29 @@ export interface OnlineGame {
 }
 
 export const auth = {
-  login: (email: string, password: string) =>
-    api.post<AuthResponse>('/auth/login', { email, password }),
-  register: (email: string, username: string, password: string) =>
-    api.post<AuthResponse>('/auth/register', { email, username, password }),
-  me: () => api.get<User>('/auth/me'),
+  login: async (email: string, password: string): Promise<AuthResponse> => {
+    const formData = new URLSearchParams();
+    formData.append('username', email);
+    formData.append('password', password);
+    
+    const response = await fetch('/api/auth/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData.toString(),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Login failed' }));
+      throw new Error(error.detail);
+    }
+    
+    return response.json();
+  },
+  register: (email: string, fullName: string, password: string) =>
+    api.post<User>('/auth/register', { email, full_name: fullName, password }),
+  me: () => api.get<User>('/users/me'),
 };
 
 export const venues = {
