@@ -27,6 +27,9 @@ export function Navbar() {
               <Link href="/tournaments" className="text-sm text-muted hover:text-foreground transition-colors">
                 Tournaments
               </Link>
+              <Link href="/announcements" className="text-sm text-muted hover:text-foreground transition-colors">
+                News
+              </Link>
             </div>
           </div>
           <div className="flex items-center gap-4">
