@@ -4,6 +4,17 @@
 FastAPI backend for a two-sided marketplace platform connecting athletes with recreational sports leagues. Venues (golf courses, bowling alleys, sports complexes, esports arenas) create and manage leagues for various sports. Supports league discovery via geolocation, participant registration, score posting, standings tracking, social features, and prediction/pick'em systems.
 
 ## Recent Changes
+- 2024-12-26: Created comprehensive League Detail page (/leagues/[id]) with:
+  - Hero section with league name, venue, schedule, capacity, rating, price, urgency indicators
+  - Photo gallery placeholder
+  - Tabbed navigation: Overview, Schedule, Standings, Roster, Venue, Reviews
+  - Overview tab with About section, Quick Stats sidebar, Organizer info, Registration info, Past Seasons
+  - Schedule tab with weekly match cards and important dates
+  - Standings tab with flight-based standings table
+  - Roster tab with player list organized by flights
+  - Venue tab with venue details, amenities, and map placeholder
+  - Reviews tab with star ratings and player reviews
+  - Sticky bottom CTA that appears on scroll
 - 2024-12-26: Updated hero section with 3 CTAs: Explore Leagues, For Venues, and Organizer signup link
 - 2024-12-26: Enhanced /for-venues page with comprehensive B2B marketing sections:
   - Hero with dashboard preview and trust indicators
