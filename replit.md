@@ -4,6 +4,9 @@
 FastAPI backend for a two-sided marketplace platform connecting athletes with recreational sports leagues. Venues (golf courses, bowling alleys, sports complexes, esports arenas) create and manage leagues for various sports. Supports league discovery via geolocation, participant registration, score posting, standings tracking, social features, and prediction/pick'em systems.
 
 ## Recent Changes
+- 2024-12-26: Added VenueFollow and UserFollow models for following venues and players with notification preferences
+- 2024-12-26: Created follow/unfollow endpoints for venues (POST/DELETE /venues/{id}/follow) and users (POST/DELETE /users/{id}/follow)
+- 2024-12-26: Added user profile endpoint with follower/following counts (/users/{id})
 - 2024-12-26: Added Sport Channels feature - dedicated broadcast-style pages for each sport (Golf, Pickleball, Bowling, Softball, Tennis, Soccer)
 - 2024-12-26: Created Channel, ChannelFeedEntry, and ChannelSubscription database models
 - 2024-12-26: Added channel router with list, detail, feed, and subscription endpoints

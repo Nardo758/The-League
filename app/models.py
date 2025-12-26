@@ -169,6 +169,30 @@ class VenueMember(Timestamped, table=True):
     user: User = Relationship(back_populates="venue_memberships")
 
 
+class VenueFollow(Timestamped, table=True):
+    __tablename__ = "venue_follow"
+    
+    id: int | None = Field(default=None, primary_key=True)
+    venue_id: int = Field(foreign_key="venue.id", index=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    notify_new_leagues: bool = Field(default=True)
+    notify_events: bool = Field(default=True)
+    notify_announcements: bool = Field(default=True)
+    
+    venue: Venue = Relationship(back_populates="followers")
+
+
+class UserFollow(Timestamped, table=True):
+    __tablename__ = "user_follow"
+    
+    id: int | None = Field(default=None, primary_key=True)
+    follower_id: int = Field(foreign_key="user.id", index=True)
+    following_id: int = Field(foreign_key="user.id", index=True)
+    notify_games: bool = Field(default=True)
+    notify_achievements: bool = Field(default=True)
+    notify_posts: bool = Field(default=False)
+
+
 class Sport(Timestamped, table=True):
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(index=True, unique=True)
@@ -555,27 +579,3 @@ class ChannelSubscription(Timestamped, table=True):
     location_radius_miles: int | None = None
 
     channel: Channel = Relationship(back_populates="subscriptions")
-
-
-class VenueFollow(Timestamped, table=True):
-    __tablename__ = "venue_follow"
-
-    id: int | None = Field(default=None, primary_key=True)
-    venue_id: int = Field(foreign_key="venue.id", index=True)
-    user_id: int = Field(foreign_key="user.id", index=True)
-    notify_new_leagues: bool = Field(default=True)
-    notify_events: bool = Field(default=True)
-    notify_announcements: bool = Field(default=True)
-
-    venue: Venue = Relationship(back_populates="followers")
-
-
-class UserFollow(Timestamped, table=True):
-    __tablename__ = "user_follow"
-
-    id: int | None = Field(default=None, primary_key=True)
-    follower_id: int = Field(foreign_key="user.id", index=True)
-    following_id: int = Field(foreign_key="user.id", index=True)
-    notify_games: bool = Field(default=True)
-    notify_achievements: bool = Field(default=True)
-    notify_posts: bool = Field(default=False)
