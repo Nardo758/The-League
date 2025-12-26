@@ -5,7 +5,18 @@ FastAPI backend for a two-sided marketplace platform connecting athletes with re
 
 ## Recent Changes
 - 2024-12-26: Updated hero section with 3 CTAs: Explore Leagues, For Venues, and Organizer signup link
-- 2024-12-26: Created /for-venues marketing page with benefits, pricing tiers, testimonials, and venue signup CTAs
+- 2024-12-26: Enhanced /for-venues page with comprehensive B2B marketing sections:
+  - Hero with dashboard preview and trust indicators
+  - Problem section (Empty Capacity, Manual Chaos, Invisible to Players)
+  - Key Benefits with Fill Capacity, Automate Management, Maximize Revenue
+  - How It Works 4-step process
+  - Features Showcase with tabbed interface (Discovery, Management, Analytics)
+  - Sport-Specific Features tabs for Golf, Pickleball, Bowling, Softball, Tennis, Soccer
+  - Enhanced testimonials section with primary + 3 secondary cards
+  - Stats section (85% capacity increase, 20hrs saved, 40% retention)
+  - Updated pricing ($99/mo Starter, $199/mo Pro, Custom Enterprise)
+  - FAQ accordion with 10 questions
+  - Final CTA with contact info
 - 2024-12-26: Major navigation redesign - reduced from 7 tabs to 4: Discover, Search, Play, My Leagues + Profile dropdown
 - 2024-12-26: Created unified Search page (/search) with sub-tabs: Leagues, Venues, Tournaments, Players
 - 2024-12-26: Created My Leagues dashboard (/my-leagues) with Active Leagues, My Schedule, My Stats, History sections
