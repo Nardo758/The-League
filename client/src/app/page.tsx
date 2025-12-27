@@ -324,14 +324,14 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white border-b border-gray-200 relative z-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3 overflow-x-auto py-4">
+          <div className="flex items-center gap-3 overflow-x-auto py-4 pb-5">
             {sports.map(sport => (
               <button
                 key={sport.id}
                 onClick={() => handleSportClick(sport.id)}
-                className={`flex flex-col items-center gap-1.5 px-4 py-3 rounded-xl min-w-[90px] border-2 transition-all ${
+                className={`flex flex-col items-center gap-1.5 px-4 py-3 rounded-xl min-w-[90px] border-2 transition-all flex-shrink-0 ${
                   selectedSport === sport.id
                     ? `${sport.color} shadow-md transform scale-105`
                     : 'border-gray-200 text-gray-600 hover:bg-gray-50'
