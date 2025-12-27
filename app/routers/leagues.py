@@ -4,9 +4,10 @@ from sqlmodel import Session, func, select
 from app.core.cache import cache_key, get_cached_list, invalidate_list_cache, set_cached_list
 from app.db import get_session
 from app.deps import get_current_user
-from app.models import League, Sport, User, Venue, VenueMember, VenueRole
+from app.models import League, NotificationType, Sport, User, Venue, VenueFollow, VenueMember, VenueRole
 from app.schemas import LeagueCreate, LeagueRead, LeagueUpdate, PaginatedResponse, paginate
 from app.utils.geo import haversine_distance
+from app.routers.notifications import create_notification
 
 router = APIRouter(prefix="/leagues", tags=["leagues"])
 
@@ -109,6 +110,23 @@ def create_league(
     session.add(league)
     session.commit()
     session.refresh(league)
+
+    venue_followers = session.exec(
+        select(VenueFollow).where(VenueFollow.venue_id == payload.venue_id)
+    ).all()
+    for follower in venue_followers:
+        if follower.user_id != current_user.id:
+            create_notification(
+                session=session,
+                user_id=follower.user_id,
+                notification_type=NotificationType.new_league,
+                title=f"New League at {venue.name}",
+                message=f"{league.name} is now accepting registrations!",
+                link=f"/leagues/{league.id}",
+                related_id=league.id,
+                related_type="league"
+            )
+    session.commit()
 
     invalidate_list_cache("leagues:")
     return league

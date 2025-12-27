@@ -3,8 +3,9 @@ from sqlmodel import Session, func, select
 
 from app.db import get_session
 from app.deps import get_current_user
-from app.models import Comment, Post, Reaction, ReactionType, User
+from app.models import Comment, NotificationType, Post, Reaction, ReactionType, User
 from app.schemas import CommentCreate, CommentRead, CommentUpdate, PaginatedResponse, ReactionCreate, ReactionRead, paginate
+from app.routers.notifications import create_notification
 
 router = APIRouter(prefix="/comments", tags=["comments"])
 
@@ -33,6 +34,37 @@ def create_comment(
     session.add(comment)
     session.commit()
     session.refresh(comment)
+
+    notification_created = False
+    if payload.parent_id:
+        parent = session.get(Comment, payload.parent_id)
+        if parent and parent.author_id and parent.author_id != current_user.id:
+            create_notification(
+                session=session,
+                user_id=parent.author_id,
+                notification_type=NotificationType.comment_reply,
+                title="New Reply to Your Comment",
+                message=f"{current_user.full_name or 'Someone'} replied to your comment",
+                link=f"/posts/{payload.post_id}#comment-{comment.id}",
+                related_id=comment.id,
+                related_type="comment"
+            )
+            notification_created = True
+    elif post and post.author_id and post.author_id != current_user.id:
+        create_notification(
+            session=session,
+            user_id=post.author_id,
+            notification_type=NotificationType.comment_reply,
+            title="New Comment on Your Post",
+            message=f"{current_user.full_name or 'Someone'} commented on your post",
+            link=f"/posts/{payload.post_id}#comment-{comment.id}",
+            related_id=comment.id,
+            related_type="comment"
+        )
+        notification_created = True
+
+    if notification_created:
+        session.commit()
 
     return comment
 

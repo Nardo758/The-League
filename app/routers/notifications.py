@@ -119,7 +119,8 @@ def create_notification(
     message: str,
     link: str | None = None,
     related_id: int | None = None,
-    related_type: str | None = None
+    related_type: str | None = None,
+    auto_commit: bool = False
 ) -> Notification:
     notification = Notification(
         user_id=user_id,
@@ -131,8 +132,9 @@ def create_notification(
         related_type=related_type
     )
     session.add(notification)
-    session.commit()
-    session.refresh(notification)
+    if auto_commit:
+        session.commit()
+        session.refresh(notification)
     return notification
 
 
@@ -142,7 +144,8 @@ def notify_league_participants(
     notification_type: NotificationType,
     title: str,
     message: str,
-    link: str | None = None
+    link: str | None = None,
+    exclude_user_id: int | None = None
 ):
     from app.models import Registration, RegistrationStatus
 
@@ -154,8 +157,9 @@ def notify_league_participants(
     ).all()
 
     for reg in registrations:
-        create_notification(
-            session=session,
+        if exclude_user_id and reg.user_id == exclude_user_id:
+            continue
+        notification = Notification(
             user_id=reg.user_id,
             notification_type=notification_type,
             title=title,
@@ -164,3 +168,4 @@ def notify_league_participants(
             related_id=league_id,
             related_type="league"
         )
+        session.add(notification)

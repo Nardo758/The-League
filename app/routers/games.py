@@ -6,9 +6,10 @@ from sqlmodel import Session, func, select
 from app.core.cache import cache_key, get_cached_list, invalidate_list_cache, set_cached_list
 from app.db import get_session
 from app.deps import get_current_user
-from app.models import Game, GameStatus, League, Registration, RegistrationStatus, ScoreSubmission, Season, User, VenueMember, VenueRole
+from app.models import Game, GameStatus, League, NotificationType, Registration, RegistrationStatus, ScoreSubmission, Season, User, VenueMember, VenueRole
 from app.schemas import GameCreate, GameRead, GameUpdate, PaginatedResponse, ScoreSubmissionCreate, ScoreSubmissionRead, paginate
 from app.schemas import GameStatus as GameStatusSchema
+from app.routers.notifications import create_notification, notify_league_participants
 
 router = APIRouter(prefix="/games", tags=["games"])
 
@@ -81,6 +82,18 @@ def create_game(
     session.add(game)
     session.commit()
     session.refresh(game)
+
+    if league:
+        notify_league_participants(
+            session=session,
+            league_id=league.id,
+            notification_type=NotificationType.game_scheduled,
+            title="Game Scheduled",
+            message=f"A new game has been scheduled for {league.name}",
+            link=f"/games/{game.id}",
+            exclude_user_id=current_user.id
+        )
+        session.commit()
 
     invalidate_list_cache("games:")
     return game
@@ -265,6 +278,30 @@ def verify_score(
     session.commit()
     session.refresh(submission)
 
+    if submission.submitted_by and submission.submitted_by != current_user.id:
+        create_notification(
+            session=session,
+            user_id=submission.submitted_by,
+            notification_type=NotificationType.score_verified,
+            title="Score Verified",
+            message=f"Your score submission for {league.name if league else 'the game'} has been verified",
+            link=f"/games/{game.id}",
+            related_id=game.id,
+            related_type="game"
+        )
+
+    if league:
+        notify_league_participants(
+            session=session,
+            league_id=league.id,
+            notification_type=NotificationType.game_result,
+            title="Game Result Posted",
+            message=f"Final score: {game.home_score}-{game.away_score}",
+            link=f"/games/{game.id}",
+            exclude_user_id=current_user.id
+        )
+
+    session.commit()
     invalidate_list_cache("games:")
     return submission
 

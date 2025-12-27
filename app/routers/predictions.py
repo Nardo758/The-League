@@ -3,8 +3,9 @@ from sqlmodel import Session, func, select
 
 from app.db import get_session
 from app.deps import get_current_user
-from app.models import Game, GameStatus, League, Prediction, Registration, RegistrationStatus, Season, Team, User
+from app.models import Game, GameStatus, League, NotificationType, Prediction, Registration, RegistrationStatus, Season, Team, User
 from app.schemas import PaginatedResponse, PredictionCreate, PredictionRead, paginate
+from app.routers.notifications import create_notification
 
 router = APIRouter(prefix="/predictions", tags=["predictions"])
 
@@ -184,6 +185,20 @@ def resolve_predictions(
         prediction.points_earned = prediction.confidence_points if is_correct else 0
         session.add(prediction)
         resolved_count += 1
+
+        if prediction.user_id != current_user.id:
+            result_msg = "Correct! You earned" if is_correct else "Incorrect. You earned"
+            points = prediction.points_earned or 0
+            create_notification(
+                session=session,
+                user_id=prediction.user_id,
+                notification_type=NotificationType.prediction_resolved,
+                title="Prediction Result",
+                message=f"{result_msg} {points} points",
+                link=f"/games/{game_id}",
+                related_id=prediction.id,
+                related_type="prediction"
+            )
 
     session.commit()
 

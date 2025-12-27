@@ -4,9 +4,10 @@ from sqlmodel import Session, func, select
 from app.core.cache import cache_key, get_cached_list, invalidate_list_cache, set_cached_list
 from app.db import get_session
 from app.deps import get_current_user
-from app.models import League, Registration, RegistrationStatus, User, VenueMember, VenueRole
+from app.models import League, Notification, NotificationType, Registration, RegistrationStatus, User, VenueMember, VenueRole
 from app.schemas import PaginatedResponse, RegistrationCreate, RegistrationRead, RegistrationUpdate, paginate
 from app.models import RegistrationMode
+from app.routers.notifications import create_notification
 
 router = APIRouter(prefix="/registrations", tags=["registrations"])
 
@@ -110,6 +111,7 @@ def update_registration(
         raise HTTPException(status_code=404, detail="Registration not found")
 
     league = session.get(League, registration.league_id)
+    old_status = registration.status
 
     member = session.exec(
         select(VenueMember).where(
@@ -133,6 +135,36 @@ def update_registration(
     session.add(registration)
     session.commit()
     session.refresh(registration)
+
+    notification_created = False
+    if payload.status and payload.status != old_status and league and registration.user_id != current_user.id:
+        if payload.status == RegistrationStatus.approved:
+            create_notification(
+                session=session,
+                user_id=registration.user_id,
+                notification_type=NotificationType.registration_approved,
+                title="Registration Approved!",
+                message=f"Your registration for {league.name} has been approved. You're all set!",
+                link=f"/leagues/{league.id}",
+                related_id=registration.id,
+                related_type="registration"
+            )
+            notification_created = True
+        elif payload.status == RegistrationStatus.rejected:
+            create_notification(
+                session=session,
+                user_id=registration.user_id,
+                notification_type=NotificationType.registration_rejected,
+                title="Registration Not Approved",
+                message=f"Unfortunately, your registration for {league.name} was not approved. Contact the organizer for details.",
+                link=f"/leagues/{league.id}",
+                related_id=registration.id,
+                related_type="registration"
+            )
+            notification_created = True
+    
+    if notification_created:
+        session.commit()
 
     invalidate_list_cache("registrations:")
     return registration

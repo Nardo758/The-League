@@ -4,8 +4,9 @@ from sqlmodel import Session, func, select
 from app.core.cache import cache_key, get_cached_list, invalidate_list_cache, set_cached_list
 from app.db import get_session
 from app.deps import get_current_user
-from app.models import Post, User, Venue, VenueMember, VenueRole
+from app.models import League, NotificationType, Post, User, Venue, VenueMember, VenueRole
 from app.schemas import PaginatedResponse, PostCreate, PostRead, PostUpdate, paginate
+from app.routers.notifications import notify_league_participants
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
@@ -103,6 +104,20 @@ def create_post(
     session.add(post)
     session.commit()
     session.refresh(post)
+
+    if payload.league_id:
+        league = session.get(League, payload.league_id)
+        if league:
+            notify_league_participants(
+                session=session,
+                league_id=payload.league_id,
+                notification_type=NotificationType.new_post,
+                title=f"New Post in {league.name}",
+                message=f"{current_user.full_name or 'A league organizer'} posted an update",
+                link=f"/posts/{post.id}",
+                exclude_user_id=current_user.id
+            )
+            session.commit()
 
     invalidate_list_cache("posts:")
     return post
