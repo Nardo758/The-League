@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Trophy, ArrowLeft, Calendar, Users, MapPin, DollarSign, Clock, Info } from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
+import { Trophy, ArrowLeft, Calendar, Users, MapPin, DollarSign, Clock, Info, AlertCircle } from 'lucide-react';
 
 const sports = [
   { id: 'golf', name: 'Golf', emoji: '🏌️' },
@@ -18,7 +19,10 @@ const bracketSizes = [4, 8, 16, 32];
 
 export default function CreateTournamentPage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [step, setStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     sport: '',
@@ -37,10 +41,76 @@ export default function CreateTournamentPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert('Tournament creation would submit to backend here');
+    if (!user) return;
+    
+    setSubmitting(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('/api/tournaments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          sport_slug: formData.sport,
+          description: formData.description,
+          start_date: formData.startDate,
+          end_date: formData.endDate,
+          registration_deadline: formData.registrationDeadline,
+          max_participants: formData.maxParticipants,
+          entry_fee: formData.entryFee ? parseFloat(formData.entryFee) : 0,
+          venue_name: formData.venue,
+          address: formData.address,
+          rules: formData.rules,
+        })
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.detail || 'Failed to create tournament');
+      }
+      
+      const tournament = await response.json();
+      router.push(`/tournaments/${tournament.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+      setSubmitting(false);
+    }
   };
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="-mx-4 sm:-mx-6 lg:-mx-8 -my-8">
+        <div className="min-h-[60vh] flex items-center justify-center bg-gray-50">
+          <div className="text-center max-w-md mx-auto px-4">
+            <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Trophy className="w-10 h-10 text-yellow-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-3">Sign in to create tournaments</h1>
+            <p className="text-gray-500 mb-6">
+              You need to be signed in to create a tournament.
+            </p>
+            <Link
+              href="/login?redirect=/tournaments/create"
+              className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Login
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="-mx-4 sm:-mx-6 lg:-mx-8 -my-8">
@@ -300,19 +370,35 @@ export default function CreateTournamentPage() {
                 </p>
               </div>
 
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                  <span className="text-red-700">{error}</span>
+                </div>
+              )}
+
               <div className="flex justify-between">
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+                  disabled={submitting}
+                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50"
                 >
                   Back
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors"
+                  disabled={submitting}
+                  className="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:bg-gray-400 flex items-center gap-2"
                 >
-                  Create Tournament
+                  {submitting ? (
+                    <>
+                      <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></div>
+                      Creating...
+                    </>
+                  ) : (
+                    'Create Tournament'
+                  )}
                 </button>
               </div>
             </div>

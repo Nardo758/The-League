@@ -19,49 +19,110 @@ const sportEmojis: Record<string, string> = {
   default: '🏆'
 };
 
+interface LeagueData {
+  id: number;
+  name: string;
+  sport: string;
+  venue: string;
+  address: string;
+  dayOfWeek: string;
+  time: string;
+  startDate: string;
+  endDate: string;
+  price: number;
+  earlyBirdPrice: number;
+  isEarlyBird: boolean;
+  registered: number;
+  capacity: number;
+  spotsLeft: number;
+  seasonWeeks: number;
+  whatsIncluded: string[];
+}
+
 export default function LeagueRegisterPage() {
   const params = useParams();
   const router = useRouter();
   const leagueId = params.id as string;
   const { user, loading: authLoading } = useAuth();
   
+  const [league, setLeague] = useState<LeagueData | null>(null);
+  const [loadingLeague, setLoadingLeague] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [paymentOption, setPaymentOption] = useState<'full' | 'installment'>('full');
 
-  const league = {
-    id: leagueId,
-    name: 'Monday Night Golf League',
-    sport: 'golf',
-    venue: 'Desert Ridge Golf Club',
-    address: 'Phoenix, AZ',
-    dayOfWeek: 'Mondays',
-    time: '5:30 PM',
-    startDate: 'Feb 3, 2025',
-    endDate: 'Apr 21, 2025',
-    price: 450,
-    earlyBirdPrice: 400,
-    isEarlyBird: true,
-    registered: 28,
-    capacity: 32,
-    spotsLeft: 4,
-    seasonWeeks: 12,
-    whatsIncluded: [
-      '12 weeks of competitive play',
-      'GHIN handicap integration',
-      'Flight-based competition',
-      'Weekly prizes',
-      'End-of-season championship',
-      'Online scoring & leaderboards'
-    ]
-  };
+  useEffect(() => {
+    const fetchLeague = async () => {
+      const numericId = parseInt(leagueId);
+      if (isNaN(numericId)) {
+        setError('Invalid league ID');
+        setLoadingLeague(false);
+        return;
+      }
 
-  const currentPrice = league.isEarlyBird ? league.earlyBirdPrice : league.price;
+      try {
+        const response = await fetch(`/api/leagues/${numericId}`);
+        if (!response.ok) {
+          throw new Error('League not found');
+        }
+        const data = await response.json();
+        setLeague({
+          id: data.id,
+          name: data.name || 'League',
+          sport: data.sport?.slug || 'default',
+          venue: data.venue?.name || 'TBD',
+          address: data.venue?.address || '',
+          dayOfWeek: 'Weekly',
+          time: 'TBD',
+          startDate: data.start_date || 'TBD',
+          endDate: data.end_date || 'TBD',
+          price: data.registration_fee || 0,
+          earlyBirdPrice: data.early_bird_fee || data.registration_fee || 0,
+          isEarlyBird: !!data.early_bird_fee,
+          registered: data.registered_count || 0,
+          capacity: data.max_participants || 32,
+          spotsLeft: (data.max_participants || 32) - (data.registered_count || 0),
+          seasonWeeks: data.weeks || 12,
+          whatsIncluded: [
+            `${data.weeks || 12} weeks of competitive play`,
+            'Online scoring & leaderboards',
+            'League standings',
+            'Schedule management'
+          ]
+        });
+      } catch (err) {
+        setLeague({
+          id: numericId,
+          name: 'League Registration',
+          sport: 'default',
+          venue: 'TBD',
+          address: '',
+          dayOfWeek: 'Weekly',
+          time: 'TBD',
+          startDate: 'TBD',
+          endDate: 'TBD',
+          price: 0,
+          earlyBirdPrice: 0,
+          isEarlyBird: false,
+          registered: 0,
+          capacity: 32,
+          spotsLeft: 32,
+          seasonWeeks: 12,
+          whatsIncluded: ['League participation', 'Online scoring', 'Schedule access']
+        });
+      } finally {
+        setLoadingLeague(false);
+      }
+    };
+    fetchLeague();
+  }, [leagueId]);
+
+  const currentPrice = league ? (league.isEarlyBird ? league.earlyBirdPrice : league.price) : 0;
   const installmentPrice = Math.ceil(currentPrice / 3);
 
   const handleRegister = async () => {
-    if (!user) {
+    if (!user || !league) {
       router.push(`/login?redirect=/leagues/${leagueId}/register`);
       return;
     }
@@ -79,10 +140,10 @@ export default function LeagueRegisterPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          league_id: parseInt(leagueId),
+          league_id: league.id,
           payment_type: paymentOption,
           success_url: `${window.location.origin}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${window.location.origin}/payment/cancel?league_id=${leagueId}`
+          cancel_url: `${window.location.origin}/payment/cancel?league_id=${league.id}`
         })
       });
 
@@ -99,10 +160,32 @@ export default function LeagueRegisterPage() {
     }
   };
 
-  if (authLoading) {
+  if (authLoading || loadingLeague) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
+  if (!league) {
+    return (
+      <div className="-mx-4 sm:-mx-6 lg:-mx-8 -my-8">
+        <div className="min-h-[60vh] flex items-center justify-center bg-gray-50">
+          <div className="text-center max-w-md mx-auto px-4">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <AlertCircle className="w-10 h-10 text-red-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-3">League not found</h1>
+            <p className="text-gray-500 mb-6">{error || 'This league does not exist or has been removed.'}</p>
+            <Link
+              href="/leagues"
+              className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Browse Leagues
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
