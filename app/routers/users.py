@@ -18,6 +18,71 @@ def me(current_user=Depends(get_current_user)):
     return current_user
 
 
+class UserSearchResult(BaseModel):
+    id: int
+    full_name: str | None = None
+    avatar_url: str | None = None
+
+
+@router.get("/search", response_model=List[UserSearchResult])
+def search_users(
+    q: str = Query(..., min_length=1, description="Search query"),
+    limit: int = Query(10, ge=1, le=50),
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    from sqlalchemy import or_
+    
+    search_term = f"%{q}%"
+    users = session.exec(
+        select(User)
+        .where(
+            or_(
+                User.full_name.ilike(search_term),
+                User.email.ilike(search_term)
+            )
+        )
+        .where(User.id != current_user.id)
+        .limit(limit)
+    ).all()
+    
+    return [
+        UserSearchResult(
+            id=u.id,
+            full_name=u.full_name,
+            avatar_url=u.avatar_url
+        )
+        for u in users
+    ]
+
+
+@router.get("/batch", response_model=List[UserSearchResult])
+def get_users_batch(
+    ids: str = Query(..., description="Comma-separated user IDs"),
+    session: Session = Depends(get_session)
+):
+    try:
+        user_ids = [int(id.strip()) for id in ids.split(",") if id.strip()]
+    except ValueError:
+        return []
+    
+    if not user_ids or len(user_ids) > 100:
+        return []
+    
+    users = session.exec(
+        select(User).where(User.id.in_(user_ids))
+    ).all()
+    
+    return [
+        UserSearchResult(
+            id=u.id,
+            full_name=u.full_name,
+            avatar_url=u.avatar_url
+        )
+        for u in users
+    ]
+
+
 class UserFollowCreate(BaseModel):
     notify_games: bool = True
     notify_achievements: bool = True

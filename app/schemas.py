@@ -494,6 +494,7 @@ class PostCreate(BaseModel):
     body: str = Field(..., min_length=1, max_length=50000)
     venue_id: int | None = None
     league_id: int | None = None
+    sport_id: int | None = None
     post_type: str = Field(default="general", max_length=50)
     is_pinned: bool = False
 
@@ -512,6 +513,7 @@ class PostRead(BaseModel):
     author_id: int
     venue_id: int | None
     league_id: int | None
+    sport_id: int | None
     title: str
     body: str
     post_type: str

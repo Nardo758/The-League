@@ -15,12 +15,13 @@ router = APIRouter(prefix="/posts", tags=["posts"])
 def list_posts(
     venue_id: int | None = None,
     league_id: int | None = None,
+    sport_id: int | None = None,
     post_type: str | None = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     session: Session = Depends(get_session)
 ):
-    cache_id = f"posts:{cache_key(venue_id=venue_id, league_id=league_id, post_type=post_type, page=page, page_size=page_size)}"
+    cache_id = f"posts:{cache_key(venue_id=venue_id, league_id=league_id, sport_id=sport_id, post_type=post_type, page=page, page_size=page_size)}"
     cached = get_cached_list(cache_id)
     if cached is not None:
         return cached
@@ -34,6 +35,9 @@ def list_posts(
     if league_id is not None:
         stmt = stmt.where(Post.league_id == league_id)
         count_stmt = count_stmt.where(Post.league_id == league_id)
+    if sport_id is not None:
+        stmt = stmt.where(Post.sport_id == sport_id)
+        count_stmt = count_stmt.where(Post.sport_id == sport_id)
     if post_type is not None:
         stmt = stmt.where(Post.post_type == post_type)
         count_stmt = count_stmt.where(Post.post_type == post_type)

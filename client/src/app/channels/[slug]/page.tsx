@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { channels, ChannelDetail, ChannelFeedEntry, ScheduleEvent, ResultItem, VenueInfo } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import MentionInput, { renderTextWithMentions, extractMentionIds, populateMentionCache } from '@/components/MentionInput';
 
 export default function ChannelPage() {
   const params = useParams();
@@ -19,6 +20,17 @@ export default function ChannelPage() {
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPostModal, setShowPostModal] = useState(false);
+  const [postContent, setPostContent] = useState('');
+  const [postTitle, setPostTitle] = useState('');
+  const [submittingPost, setSubmittingPost] = useState(false);
+  const [communityPosts, setCommunityPosts] = useState<Array<{
+    id: number;
+    author_id: number;
+    title: string;
+    body: string;
+    created_at: string;
+  }>>([]);
 
   useEffect(() => {
     if (!slug) return;
@@ -63,6 +75,70 @@ export default function ChannelPage() {
     }
   };
 
+  const fetchCommunityPosts = async (sportId: number) => {
+    try {
+      const response = await fetch(`/api/posts?sport_id=${sportId}&page_size=20`);
+      if (response.ok) {
+        const data = await response.json();
+        const posts = data.items || [];
+        setCommunityPosts(posts);
+        
+        const allMentionIds = new Set<number>();
+        posts.forEach((post: { body: string }) => {
+          extractMentionIds(post.body).forEach(id => allMentionIds.add(id));
+        });
+        
+        if (allMentionIds.size > 0) {
+          try {
+            const idsParam = Array.from(allMentionIds).join(',');
+            const usersResponse = await fetch(`/api/users/batch?ids=${idsParam}`);
+            if (usersResponse.ok) {
+              const users = await usersResponse.json();
+              populateMentionCache(users);
+              setCommunityPosts([...posts]);
+            }
+          } catch (e) {
+            console.error('Failed to fetch mentioned users:', e);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch posts:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (channelData?.channel.sport_id && activeTab === 'community') {
+      fetchCommunityPosts(channelData.channel.sport_id);
+    }
+  }, [channelData?.channel.sport_id, activeTab]);
+
+  const handleCreatePost = async () => {
+    if (!postContent.trim() || !channelData) return;
+    setSubmittingPost(true);
+    try {
+      const response = await fetch('/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: postTitle || 'Community Post',
+          body: postContent,
+          sport_id: channelData.channel.sport_id
+        })
+      });
+      if (response.ok) {
+        setPostContent('');
+        setPostTitle('');
+        setShowPostModal(false);
+        fetchCommunityPosts(channelData.channel.sport_id);
+      }
+    } catch (err) {
+      console.error('Failed to create post:', err);
+    } finally {
+      setSubmittingPost(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -96,13 +172,7 @@ export default function ChannelPage() {
     { id: 'news', label: 'News', icon: '📰', badge: feedEntries.length > 0 ? feedEntries.length : null },
   ];
 
-  const mockDiscussions = [
-    { id: 1, author: 'SportsFan2024', avatar: '👤', content: 'Anyone else playing in the weekend tournament? Looking for practice partners!', likes: 12, replies: 8, time: '15m ago', isHot: true },
-    { id: 2, author: 'SarahW', avatar: '👩', content: 'Just had my best game today! Thanks to everyone for the tips.', likes: 45, replies: 15, time: '1h ago', isHot: true },
-    { id: 3, author: 'MikeChen', avatar: '👨', content: 'What are your go-to strategies for improvement?', likes: 8, replies: 22, time: '2h ago', isHot: false },
-    { id: 4, author: 'TeamEagle', avatar: '🦅', content: 'League standings are getting tight! Only 2 points separate the top 4 teams.', likes: 23, replies: 6, time: '3h ago', isHot: false },
-  ];
-
+  
   const mockLeaderboard = [
     { rank: 1, name: 'Mike Chen', score: -8, through: 14, trend: 'up' },
     { rank: 2, name: 'Sarah Williams', score: -7, through: 14, trend: 'same' },
@@ -476,48 +546,107 @@ export default function ChannelPage() {
                   <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                     <span>💬</span> Community
                   </h2>
-                  <button className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 text-sm">
-                    + New Post
-                  </button>
+                  {user && (
+                    <button 
+                      onClick={() => setShowPostModal(true)}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 text-sm"
+                    >
+                      + New Post
+                    </button>
+                  )}
                 </div>
-                <div className="space-y-4">
-                  {mockDiscussions.map((post) => (
-                    <div key={post.id} className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 transition-colors">
-                      <div className="flex gap-3">
-                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-xl">
-                          {post.avatar}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-bold text-gray-900">{post.author}</span>
-                            <span className="text-gray-400">•</span>
-                            <span className="text-sm text-gray-500">{post.time}</span>
-                            {post.isHot && (
-                              <span className="px-2 py-0.5 bg-red-100 text-red-600 text-xs rounded-full font-medium">🔥 Hot</span>
-                            )}
-                          </div>
-                          <p className="text-gray-700 mb-3">{post.content}</p>
-                          <div className="flex items-center gap-6 text-sm text-gray-500">
-                            <button className="flex items-center gap-1 hover:text-red-500 transition-colors">
-                              <span>❤️</span>
-                              <span>{post.likes}</span>
-                            </button>
-                            <button className="flex items-center gap-1 hover:text-blue-500 transition-colors">
-                              <span>💬</span>
-                              <span>{post.replies} replies</span>
-                            </button>
-                            <button className="hover:text-green-500 transition-colors">
-                              <span>🔄 Repost</span>
-                            </button>
-                            <button className="hover:text-blue-500 transition-colors">
-                              <span>📤 Share</span>
-                            </button>
-                          </div>
+                
+                {showPostModal && (
+                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl w-full max-w-lg p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-xl font-bold text-gray-900">Create Post</h3>
+                        <button
+                          onClick={() => setShowPostModal(false)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <div className="space-y-4">
+                        <input
+                          type="text"
+                          value={postTitle}
+                          onChange={(e) => setPostTitle(e.target.value)}
+                          placeholder="Title (optional)"
+                          className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:outline-none transition-colors"
+                        />
+                        <MentionInput
+                          value={postContent}
+                          onChange={setPostContent}
+                          placeholder="What's on your mind? Use @ to mention someone..."
+                          rows={4}
+                          className="bg-gray-50 border-gray-200 text-gray-900"
+                        />
+                        <p className="text-xs text-gray-500">
+                          Tip: Type @ followed by a name to mention someone
+                        </p>
+                        <div className="flex justify-end gap-3">
+                          <button
+                            onClick={() => setShowPostModal(false)}
+                            className="px-4 py-2 text-gray-600 hover:text-gray-900"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleCreatePost}
+                            disabled={!postContent.trim() || submittingPost}
+                            className="px-6 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {submittingPost ? 'Posting...' : 'Post'}
+                          </button>
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
+                {communityPosts.length > 0 ? (
+                  <div className="space-y-4">
+                    {communityPosts.map((post) => (
+                      <div key={post.id} className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 transition-colors">
+                        <div className="flex gap-3">
+                          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold">
+                            {post.title.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-bold text-gray-900">{post.title}</span>
+                              <span className="text-gray-400">•</span>
+                              <span className="text-sm text-gray-500">
+                                {new Date(post.created_at).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <p className="text-gray-700 mb-3">{renderTextWithMentions(post.body)}</p>
+                            <div className="flex items-center gap-6 text-sm text-gray-500">
+                              <button className="flex items-center gap-1 hover:text-red-500 transition-colors">
+                                <span>❤️</span>
+                                <span>Like</span>
+                              </button>
+                              <button className="flex items-center gap-1 hover:text-blue-500 transition-colors">
+                                <span>💬</span>
+                                <span>Reply</span>
+                              </button>
+                              <button className="hover:text-blue-500 transition-colors">
+                                <span>📤 Share</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                    <span className="text-5xl mb-4 block">💬</span>
+                    <h3 className="text-xl font-medium text-gray-900 mb-2">No Posts Yet</h3>
+                    <p className="text-gray-500">Be the first to start a conversation!</p>
+                  </div>
+                )}
               </>
             )}
 
