@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search, TrendingUp, Flame, Sparkles, Trophy, Users, MapPin, DollarSign, ChevronRight, Play, Eye, Calendar } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useLocation } from '@/contexts/LocationContext';
+import LocationSetupModal from '@/components/LocationSetupModal';
 
 interface FeaturedEvent {
   id: number;
@@ -149,16 +151,36 @@ const sports = [
 
 export default function HomePage() {
   const router = useRouter();
+  const { location } = useLocation();
   const [activeTab, setActiveTab] = useState('all');
   const [selectedSport, setSelectedSport] = useState('all');
   const [featuredEvents, setFeaturedEvents] = useState<FeaturedEventsResponse | null>(null);
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showLocationModal, setShowLocationModal] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     loadFeaturedEvents();
   }, []);
+  
+  useEffect(() => {
+    if (typeof window === 'undefined' || !mounted) return;
+    
+    const hasSeenLocationSetup = localStorage.getItem('hasSeenLocationSetup');
+    const userLocationStored = localStorage.getItem('userLocation');
+    
+    if (!hasSeenLocationSetup && !userLocationStored && !location.hasLocationSetup) {
+      const timer = setTimeout(() => {
+        setShowLocationModal(true);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [mounted, location.hasLocationSetup]);
+  
+  const handleLocationSetupComplete = () => {
+    localStorage.setItem('hasSeenLocationSetup', 'true');
+  };
 
   const handleSportClick = (sportId: string) => {
     if (sportId === 'all') {
@@ -195,6 +217,15 @@ export default function HomePage() {
   if (!mounted) return null;
 
   return (
+    <>
+    <LocationSetupModal 
+      isOpen={showLocationModal} 
+      onClose={() => {
+        setShowLocationModal(false);
+        localStorage.setItem('hasSeenLocationSetup', 'true');
+      }}
+      onComplete={handleLocationSetupComplete}
+    />
     <div className="-mx-4 sm:-mx-6 lg:-mx-8 -my-8">
       <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -325,7 +356,17 @@ export default function HomePage() {
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-6">
                   <Trophy className="w-6 h-6 text-yellow-500" />
-                  <h2 className="text-2xl font-bold text-gray-900">Featured Leagues</h2>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {location.city 
+                      ? `Leagues Near ${location.city}${location.state ? `, ${location.state}` : ''}`
+                      : 'Featured Leagues'
+                    }
+                  </h2>
+                  {location.city && (
+                    <span className="text-sm text-gray-500">
+                      within {location.radius_miles} mi
+                    </span>
+                  )}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {mockLeagues.map(league => (
@@ -563,5 +604,6 @@ export default function HomePage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -55,22 +55,28 @@ def list_venues(
         count_stmt = count_stmt.where(Venue.venue_type == venue_type)
 
     all_venues = list(session.exec(stmt).all())
+    venues_with_distance: list[tuple] = []
 
     if latitude is not None and longitude is not None:
-        filtered = []
         for v in all_venues:
             if v.latitude is not None and v.longitude is not None:
                 dist = get_distance_miles(latitude, longitude, v.latitude, v.longitude)
                 if dist <= radius_miles:
-                    filtered.append(v)
-        all_venues = filtered
+                    venues_with_distance.append((v, round(dist, 1)))
+        venues_with_distance.sort(key=lambda x: x[1])
+    else:
+        venues_with_distance = [(v, None) for v in all_venues]
 
-    total = len(all_venues)
+    total = len(venues_with_distance)
     start = (page - 1) * page_size
     end = start + page_size
-    page_venues = all_venues[start:end]
+    page_venues = venues_with_distance[start:end]
 
-    items = [VenueRead.model_validate(v) for v in page_venues]
+    items = []
+    for venue, dist in page_venues:
+        venue_data = VenueRead.model_validate(venue)
+        venue_data.distance_miles = dist
+        items.append(venue_data)
     result = paginate(items, total, page, page_size)
 
     if latitude is None and longitude is None:

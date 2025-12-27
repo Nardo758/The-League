@@ -234,6 +234,7 @@ class VenueRead(BaseModel):
     logo_url: str | None
     is_virtual: bool
     created_at: datetime
+    distance_miles: float | None = None
 
 
 class SportCreate(BaseModel):
@@ -303,6 +304,7 @@ class LeagueRead(BaseModel):
     min_participants: int | None
     is_active: bool
     created_at: datetime
+    distance_miles: float | None = None
 
 
 class SeasonCreate(BaseModel):

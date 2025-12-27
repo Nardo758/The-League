@@ -43,24 +43,29 @@ def list_leagues(
         count_stmt = count_stmt.where(League.is_active == is_active)
 
     all_leagues = list(session.exec(stmt).all())
+    leagues_with_distance: list[tuple] = []
 
     if latitude is not None and longitude is not None:
-        filtered = []
         for league in all_leagues:
             venue = session.get(Venue, league.venue_id)
             if venue and venue.latitude is not None and venue.longitude is not None:
                 dist = haversine_distance(latitude, longitude, venue.latitude, venue.longitude)
                 if dist <= radius_miles:
-                    filtered.append((league, dist))
-        filtered.sort(key=lambda x: x[1])
-        all_leagues = [item[0] for item in filtered]
+                    leagues_with_distance.append((league, round(dist, 1)))
+        leagues_with_distance.sort(key=lambda x: x[1])
+    else:
+        leagues_with_distance = [(league, None) for league in all_leagues]
 
-    total = len(all_leagues)
+    total = len(leagues_with_distance)
     start = (page - 1) * page_size
     end = start + page_size
-    page_leagues = all_leagues[start:end]
+    page_leagues = leagues_with_distance[start:end]
 
-    items = [LeagueRead.model_validate(league) for league in page_leagues]
+    items = []
+    for league, dist in page_leagues:
+        league_data = LeagueRead.model_validate(league)
+        league_data.distance_miles = dist
+        items.append(league_data)
     result = paginate(items, total, page, page_size)
     
     if latitude is None and longitude is None:
