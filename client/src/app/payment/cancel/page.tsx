@@ -85,9 +85,13 @@ function PaymentCancelContent() {
       const data = await api.get<SessionDetails>(`/payments/session/${sessionId}`);
       setSession(data);
       
-      if (data.created_at) {
+      if (data.expires_at) {
+        const now = Math.floor(Date.now() / 1000);
+        const remaining = Math.max(0, data.expires_at - now);
+        setTimeRemaining(remaining);
+      } else if (data.created_at) {
         const elapsed = Math.floor(Date.now() / 1000) - data.created_at;
-        const remaining = Math.max(0, 15 * 60 - elapsed);
+        const remaining = Math.max(0, 30 * 60 - elapsed);
         setTimeRemaining(remaining);
       }
     } catch (err) {

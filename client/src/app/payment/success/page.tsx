@@ -76,6 +76,25 @@ function PaymentSuccessContent() {
     }
   }, [sessionId]);
 
+  useEffect(() => {
+    if (!session || session.payment_status === 'paid' || session.is_expired) {
+      return;
+    }
+    
+    const pollInterval = setInterval(() => {
+      fetchSessionDetails();
+    }, 3000);
+
+    const maxPollTime = setTimeout(() => {
+      clearInterval(pollInterval);
+    }, 120000);
+
+    return () => {
+      clearInterval(pollInterval);
+      clearTimeout(maxPollTime);
+    };
+  }, [session?.payment_status, session?.is_expired, sessionId]);
+
   const fetchSessionDetails = async () => {
     try {
       const data = await api.get<SessionDetails>(`/payments/session/${sessionId}`);
@@ -132,13 +151,23 @@ function PaymentSuccessContent() {
     const endDate = new Date(startDate);
     endDate.setHours(20, 0, 0, 0);
     
-    const formatICSDate = (d: Date) => {
+    const formatLocalICSDate = (d: Date) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const hours = String(d.getHours()).padStart(2, '0');
+      const mins = String(d.getMinutes()).padStart(2, '0');
+      const secs = String(d.getSeconds()).padStart(2, '0');
+      return `${year}${month}${day}T${hours}${mins}${secs}`;
+    };
+    
+    const formatUTCDate = (d: Date) => {
       return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
     };
     
-    const dtStart = formatICSDate(startDate);
-    const dtEnd = formatICSDate(endDate);
-    const now = formatICSDate(new Date());
+    const dtStart = formatLocalICSDate(startDate);
+    const dtEnd = formatLocalICSDate(endDate);
+    const now = formatUTCDate(new Date());
     const uid = `${session.session_id}@theleague.com`;
     
     const location = [session.venue?.address, session.venue?.city, session.venue?.state]
@@ -281,16 +310,16 @@ END:VCALENDAR`;
         <div className="bg-[#1a1a1a] rounded-2xl p-8 border border-amber-500/30">
           <Loader2 className="w-16 h-16 text-amber-500 mx-auto mb-6 animate-spin" />
           <h1 className="text-2xl font-bold text-white mb-3">Payment Processing</h1>
-          <p className="text-gray-400 mb-6">
+          <p className="text-gray-400 mb-4">
             Your payment is being processed. This page will update automatically when complete.
+          </p>
+          <div className="flex items-center justify-center gap-2 text-sm text-gray-500 mb-6">
+            <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+            Checking status every 3 seconds...
+          </div>
+          <p className="text-gray-500 text-sm">
             If this takes longer than a minute, please check your email for confirmation.
           </p>
-          <button 
-            onClick={fetchSessionDetails}
-            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors"
-          >
-            Refresh Status
-          </button>
         </div>
       </div>
     );
