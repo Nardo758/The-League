@@ -357,16 +357,8 @@ export default function HomePage() {
                 <div className="flex items-center gap-3 mb-6">
                   <Trophy className="w-6 h-6 text-yellow-500" />
                   <h2 className="text-2xl font-bold text-gray-900">
-                    {location.city 
-                      ? `Leagues Near ${location.city}${location.state ? `, ${location.state}` : ''}`
-                      : 'Featured Leagues'
-                    }
+                    Featured Leagues
                   </h2>
-                  {location.city && (
-                    <span className="text-sm text-gray-500">
-                      within {location.radius_miles} mi
-                    </span>
-                  )}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {mockLeagues.map(league => (
