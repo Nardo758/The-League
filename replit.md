@@ -16,6 +16,11 @@ The frontend utilizes Next.js 16 with App Router, Tailwind CSS, and TypeScript, 
   - **League Detail (`/leagues/[id]`)**: Enhanced tabs including Schedule (All/Upcoming/Past filters, List/Calendar view toggle), Standings (movement indicators, season stats summary), Roster (search, mutual connections, verified badges), and Reviews (rating distribution chart, helpful voting).
   - **My Leagues Dashboard (`/my-leagues`)**: Added **Friends Looking to Play** feed showing friends' open game invites with Request to Join functionality.
 - **Navigation**: Streamlined to Discover, Search, Play, My Leagues, plus a Profile dropdown.
+  - **Support Page (`/support`)**: FAQ accordion with common questions, Email/Live Chat contact options, resource links.
+  - **Notifications Inbox (`/notifications`)**: Centralized notifications with filter (All/Unread), mark as read, delete functionality.
+  - **Tournament Create (`/tournaments/create`)**: Multi-step wizard with auth gating, sport selection, schedule, and API submission.
+  - **League Registration (`/leagues/[id]/register`)**: Registration flow with Stripe checkout, payment options (full/installment), terms acceptance.
+  - **Profile Subpages**: `/profile/settings` and `/profile/notifications` redirect to profile page with appropriate tab.
 
 ### Technical Implementations
 The backend is built with FastAPI.
