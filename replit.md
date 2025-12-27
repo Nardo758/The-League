@@ -37,7 +37,9 @@ The backend is built with FastAPI.
   - **Saved Locations**: `UserLocation` model stores multiple locations (Home, Work, etc.) with label, lat/lng, radius, and `is_primary` flag.
   - **Location Bar**: Persistent header component showing current location and radius, with quick-switch dropdown to saved locations.
   - **Location Settings**: `/settings/locations` page for managing saved locations with auto-detect, add/remove/set-primary functionality.
-  - **API Filtering**: Leagues and venues endpoints accept `latitude`, `longitude`, `radius_miles` query params for distance-based filtering using Haversine formula.
+  - **API Filtering**: Leagues and venues endpoints accept `latitude`, `longitude`, `radius_miles` query params for distance-based filtering using Haversine formula. Returns `distance_miles` in response when location params provided.
+  - **Location Setup Modal**: Modal appears on first visit for users without location, offering auto-detect or manual entry with radius selection.
+  - **No Results Component**: `NoResultsInArea` component shows when no results found with options to expand radius or search all locations.
 - **Management**: Tools for venues to create, manage, and track leagues, seasons, and registrations. Score submission with staff verification.
 - **Player Experience**: Registration, personal dashboards (active leagues, schedule, stats), live game feeds, tournament participation, and social interaction.
 - **Payments**: Stripe integration for secure transactions.
