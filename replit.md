@@ -27,7 +27,12 @@ The backend is built with FastAPI.
     - **Scoring & Standings**: Dynamic calculation based on sport-specific scoring types (`stroke_play`, `match_play`, `points`, `wins_losses`, `sets`, `frames`).
     - **Social Features**: Comments and reactions on posts, user/venue following with notifications.
     - **Predictions/Pick'em System**: Allows users to make predictions with a leaderboard.
-    - **Notifications System**: Supports 11 types of user notifications.
+    - **Notifications System**: Supports 11 types of user notifications including:
+      - Registration approval/rejection, game scheduling, score verification, game results
+      - New posts, comment replies, prediction resolution, new league creation
+      - @mentions (format: `@[user:123]`), registration deadline reminders (24-48 hour window)
+      - Uses `create_notification` helper with `auto_commit=False` pattern and `exclude_user_id` for self-notification prevention
+    - **Background Scheduler**: `AsyncIOScheduler` runs registration deadline reminder checks every 6 hours
     - **Channels**: Dedicated broadcast-style pages for each sport, aggregating feed entries.
 
 ### Feature Specifications
