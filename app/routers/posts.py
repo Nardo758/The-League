@@ -6,7 +6,7 @@ from app.db import get_session
 from app.deps import get_current_user
 from app.models import League, NotificationType, Post, User, Venue, VenueMember, VenueRole
 from app.schemas import PaginatedResponse, PostCreate, PostRead, PostUpdate, paginate
-from app.routers.notifications import notify_league_participants
+from app.routers.notifications import notify_league_participants, parse_and_notify_mentions
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
@@ -105,6 +105,8 @@ def create_post(
     session.commit()
     session.refresh(post)
 
+    notifications_pending = False
+    
     if payload.league_id:
         league = session.get(League, payload.league_id)
         if league:
@@ -117,7 +119,23 @@ def create_post(
                 link=f"/posts/{post.id}",
                 exclude_user_id=current_user.id
             )
-            session.commit()
+            notifications_pending = True
+
+    if payload.body:
+        mentioned = parse_and_notify_mentions(
+            session=session,
+            content=payload.body,
+            author_id=current_user.id,
+            author_name=current_user.full_name,
+            link=f"/posts/{post.id}",
+            related_id=post.id,
+            related_type="post"
+        )
+        if mentioned > 0:
+            notifications_pending = True
+
+    if notifications_pending:
+        session.commit()
 
     invalidate_list_cache("posts:")
     return post

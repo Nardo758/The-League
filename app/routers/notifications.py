@@ -169,3 +169,52 @@ def notify_league_participants(
             related_type="league"
         )
         session.add(notification)
+
+
+def parse_and_notify_mentions(
+    session: Session,
+    content: str,
+    author_id: int,
+    author_name: str | None,
+    link: str,
+    related_id: int,
+    related_type: str
+) -> int:
+    import re
+    from app.models import User
+
+    mention_pattern = r'@\[user:(\d+)\]'
+    matches = re.findall(mention_pattern, content)
+    
+    notified_count = 0
+    notified_users: set[int] = set()
+    
+    for user_id_str in matches:
+        try:
+            mentioned_user_id = int(user_id_str)
+        except ValueError:
+            continue
+        
+        if mentioned_user_id == author_id:
+            continue
+        if mentioned_user_id in notified_users:
+            continue
+        
+        user = session.get(User, mentioned_user_id)
+        if not user:
+            continue
+        
+        create_notification(
+            session=session,
+            user_id=mentioned_user_id,
+            notification_type=NotificationType.mention,
+            title="You were mentioned",
+            message=f"{author_name or 'Someone'} mentioned you in a {related_type}",
+            link=link,
+            related_id=related_id,
+            related_type=related_type
+        )
+        notified_users.add(mentioned_user_id)
+        notified_count += 1
+    
+    return notified_count

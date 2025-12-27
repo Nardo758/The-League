@@ -8,6 +8,7 @@ from slowapi.errors import RateLimitExceeded
 from app.core.config import settings
 from app.core.limiter import limiter
 from app.core.logging import generate_request_id, request_id_var, setup_logging
+from app.core.scheduler import start_scheduler, stop_scheduler
 from app.db import init_db
 from app.routers import (
     ai,
@@ -38,7 +39,9 @@ from app.routers import (
 async def lifespan(_: FastAPI):
     setup_logging()
     init_db()
+    start_scheduler()
     yield
+    stop_scheduler()
 
 
 app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)

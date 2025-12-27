@@ -5,7 +5,7 @@ from app.db import get_session
 from app.deps import get_current_user
 from app.models import Comment, NotificationType, Post, Reaction, ReactionType, User
 from app.schemas import CommentCreate, CommentRead, CommentUpdate, PaginatedResponse, ReactionCreate, ReactionRead, paginate
-from app.routers.notifications import create_notification
+from app.routers.notifications import create_notification, parse_and_notify_mentions
 
 router = APIRouter(prefix="/comments", tags=["comments"])
 
@@ -35,7 +35,7 @@ def create_comment(
     session.commit()
     session.refresh(comment)
 
-    notification_created = False
+    notifications_pending = False
     if payload.parent_id:
         parent = session.get(Comment, payload.parent_id)
         if parent and parent.author_id and parent.author_id != current_user.id:
@@ -49,7 +49,7 @@ def create_comment(
                 related_id=comment.id,
                 related_type="comment"
             )
-            notification_created = True
+            notifications_pending = True
     elif post and post.author_id and post.author_id != current_user.id:
         create_notification(
             session=session,
@@ -61,9 +61,21 @@ def create_comment(
             related_id=comment.id,
             related_type="comment"
         )
-        notification_created = True
+        notifications_pending = True
 
-    if notification_created:
+    mentioned = parse_and_notify_mentions(
+        session=session,
+        content=payload.body,
+        author_id=current_user.id,
+        author_name=current_user.full_name,
+        link=f"/posts/{payload.post_id}#comment-{comment.id}",
+        related_id=comment.id,
+        related_type="comment"
+    )
+    if mentioned > 0:
+        notifications_pending = True
+
+    if notifications_pending:
         session.commit()
 
     return comment
