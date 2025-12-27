@@ -142,8 +142,8 @@ function SearchPageContent() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
-          <div className="lg:w-64 flex-shrink-0 overflow-visible">
-            <div className="bg-white rounded-xl border border-gray-200 p-4 sticky top-20">
+          <div className="lg:w-64 flex-shrink-0 overflow-visible relative z-10">
+            <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-4">
                 <Filter className="w-4 h-4 text-gray-500" />
                 <h3 className="font-semibold text-gray-900">Filters</h3>
