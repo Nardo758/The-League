@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { User, Settings, Bell, Shield, HelpCircle, Trophy, Gamepad2, MapPin, Mail, Calendar, Edit2 } from 'lucide-react';
 
@@ -22,8 +23,16 @@ const sportsInterests = [
 
 export default function ProfilePage() {
   const { user, loading } = useAuth();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState('profile');
   const [selectedSports, setSelectedSports] = useState<string[]>(['golf', 'pickleball']);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && ['profile', 'settings', 'notifications', 'privacy'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   if (loading) {
     return (
@@ -80,12 +89,12 @@ export default function ProfilePage() {
           <div className="flex items-start gap-6 mb-6">
             <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
               <span className="text-3xl font-bold text-white">
-                {user.username.charAt(0).toUpperCase()}
+                {user.username?.charAt(0).toUpperCase() || 'U'}
               </span>
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-2xl font-bold text-gray-900">{user.username}</h1>
+                <h1 className="text-2xl font-bold text-gray-900">{user.username || 'User'}</h1>
                 <button className="p-1 text-gray-400 hover:text-gray-600">
                   <Edit2 className="w-4 h-4" />
                 </button>
@@ -197,14 +206,14 @@ export default function ProfilePage() {
               <div className="bg-white rounded-xl border border-gray-200 p-6">
                 <h2 className="font-semibold text-gray-900 mb-4">Help & Support</h2>
                 <Link
-                  href="#"
+                  href="/support"
                   className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600 py-2"
                 >
                   <HelpCircle className="w-4 h-4" />
                   FAQs
                 </Link>
                 <Link
-                  href="#"
+                  href="/support"
                   className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600 py-2"
                 >
                   <Mail className="w-4 h-4" />
